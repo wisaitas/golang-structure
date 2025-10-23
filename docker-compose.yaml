@@ -1,0 +1,18 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: postgres
+    ports:
+      - 5432:5432
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ./data/postgres:/var/lib/postgresql
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge
