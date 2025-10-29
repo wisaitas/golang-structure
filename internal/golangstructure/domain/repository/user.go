@@ -8,6 +8,8 @@ import (
 
 type UserRepository interface {
 	CreateUser(user *entity.User) error
+	GetUsers(users *[]entity.User) error
+	ReplaceUser(user *entity.User) error
 }
 
 type userRepository struct {
@@ -24,4 +26,12 @@ func NewUserRepository(
 
 func (r *userRepository) CreateUser(user *entity.User) error {
 	return r.db.Create(&user).Error
+}
+
+func (r *userRepository) GetUsers(users *[]entity.User) error {
+	return r.db.Find(&users).Error
+}
+
+func (r *userRepository) ReplaceUser(user *entity.User) error {
+	return r.db.Updates(&user).Error
 }

@@ -19,5 +19,12 @@ func newHandler(
 }
 
 func (h *handler) CreateUser(c *fiber.Ctx) error {
-	return nil
+	req := Request{}
+	if err := c.BodyParser(&req); err != nil {
+		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
+			"message": err.Error(),
+		})
+	}
+
+	return h.service.CreateUser(c, &req)
 }

@@ -12,7 +12,7 @@ type config struct {
 	postgresDB *gorm.DB
 }
 
-func NewConfig() config {
+func newConfig() *config {
 	postgresDB := postgres.ConnectDB(postgres.Config{
 		Host:     golangstructure.ENV.Postgres.Host,
 		Port:     golangstructure.ENV.Postgres.Port,
@@ -26,7 +26,7 @@ func NewConfig() config {
 		panic(err)
 	}
 
-	return config{
+	return &config{
 		postgresDB: postgresDB,
 	}
 }

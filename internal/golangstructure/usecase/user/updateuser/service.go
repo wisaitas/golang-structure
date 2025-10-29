@@ -1,4 +1,4 @@
-package createuser
+package updateuser
 
 import (
 	"github.com/gofiber/fiber/v2"
@@ -7,7 +7,7 @@ import (
 )
 
 type service interface {
-	CreateUser(c *fiber.Ctx, request *Request) error
+	UpdateUser(c *fiber.Ctx, req *Request, id int) error
 }
 
 type serviceImpl struct {
@@ -22,19 +22,18 @@ func newService(
 	}
 }
 
-func (s *serviceImpl) CreateUser(c *fiber.Ctx, req *Request) error {
+func (s *serviceImpl) UpdateUser(c *fiber.Ctx, req *Request, id int) error {
 	user := entity.User{
+		ID:   id,
 		Name: req.Name,
 		Age:  req.Age,
 	}
 
-	if err := s.userRepository.CreateUser(&user); err != nil {
+	if err := s.userRepository.ReplaceUser(&user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "user created successfully",
-	})
+	return c.Status(fiber.StatusNoContent).JSON(nil)
 }
