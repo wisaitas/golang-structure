@@ -27,5 +27,7 @@ func (r *UserRouter) Setup() {
 
 	userRouter.Post("/", r.userStrategy.CreateUser)
 
-	userRouter.Put("/:id", r.userStrategy.UpdateUser)
+	userRouter.Put("/:user_id", r.userStrategy.UpdateUser)
+
+	userRouter.Delete("/:user_id", r.userStrategy.DeleteUser)
 }

@@ -34,8 +34,8 @@ func (h *handler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	param := c.Params("id")
-	id, err := strconv.Atoi(param)
+	param := c.Params("user_id")
+	userID, err := strconv.Atoi(param)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
@@ -48,5 +48,5 @@ func (h *handler) UpdateUser(c *fiber.Ctx) error {
 		})
 	}
 
-	return h.service.UpdateUser(c, &req, id)
+	return h.service.UpdateUser(c, &req, userID)
 }

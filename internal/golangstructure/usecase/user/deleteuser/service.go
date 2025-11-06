@@ -1,13 +1,12 @@
-package updateuser
+package deleteuser
 
 import (
 	"github.com/gofiber/fiber/v2"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 )
 
 type service interface {
-	UpdateUser(c *fiber.Ctx, req *Request, id int) error
+	DeleteUser(c *fiber.Ctx, userID int) error
 }
 
 type serviceImpl struct {
@@ -22,20 +21,14 @@ func newService(
 	}
 }
 
-func (s *serviceImpl) UpdateUser(c *fiber.Ctx, req *Request, id int) error {
-	user := entity.User{
-		Base: entity.Base{
-			ID: id,
-		},
-		Name: req.Name,
-		Age:  req.Age,
-	}
-
-	if err := s.userRepository.ReplaceUser(&user); err != nil {
+func (s *serviceImpl) DeleteUser(c *fiber.Ctx, userID int) error {
+	if err := s.userRepository.DeleteUser(userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
 
-	return c.Status(fiber.StatusNoContent).JSON(nil)
+	return c.Status(fiber.StatusNoContent).JSON(fiber.Map{
+		"message": "user deleted successfully",
+	})
 }
