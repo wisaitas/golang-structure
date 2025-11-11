@@ -2,22 +2,18 @@ package getusers
 
 import "github.com/gofiber/fiber/v2"
 
-type Handler interface {
-	GetUsers(c *fiber.Ctx) error
-}
-
-type handler struct {
-	service service
+type Handler struct {
+	service Service
 }
 
 func newHandler(
-	service service,
-) Handler {
-	return &handler{
+	service Service,
+) *Handler {
+	return &Handler{
 		service: service,
 	}
 }
 
-func (h *handler) GetUsers(c *fiber.Ctx) error {
-	return h.service.GetUsers(c)
+func (h *Handler) Handler(c *fiber.Ctx) error {
+	return h.service.Service(c)
 }

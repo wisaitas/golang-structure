@@ -1,4 +1,4 @@
-package updateuser
+package register
 
 import (
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"

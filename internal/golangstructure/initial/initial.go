@@ -7,7 +7,6 @@ import (
 	"syscall"
 
 	"github.com/caarlos0/env/v11"
-	"github.com/go-playground/validator/v10"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
 
 	"github.com/gofiber/fiber/v2"
@@ -26,11 +25,13 @@ type App struct {
 
 func New() *App {
 	config := newConfig()
-	validator := validator.New()
+	sdk := newSDK()
 	repository := newRepository(config)
-	strategy := newStrategy(repository, validator)
+	useCase := newUseCase(repository, sdk)
 	app := fiber.New()
-	newRouter(app, strategy)
+	newMiddleware(app)
+
+	newRouter(app, useCase)
 
 	return &App{
 		FiberApp: app,

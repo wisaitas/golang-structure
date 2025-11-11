@@ -6,23 +6,19 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-type Handler interface {
-	DeleteUser(c *fiber.Ctx) error
-}
-
-type handler struct {
-	service service
+type Handler struct {
+	service Service
 }
 
 func newHandler(
-	service service,
-) Handler {
-	return &handler{
+	service Service,
+) *Handler {
+	return &Handler{
 		service: service,
 	}
 }
 
-func (h *handler) DeleteUser(c *fiber.Ctx) error {
+func (h *Handler) Handler(c *fiber.Ctx) error {
 	param := c.Params("user_id")
 	userID, err := strconv.Atoi(param)
 	if err != nil {
@@ -31,5 +27,5 @@ func (h *handler) DeleteUser(c *fiber.Ctx) error {
 		})
 	}
 
-	return h.service.DeleteUser(c, userID)
+	return h.service.Service(c, userID)
 }

@@ -6,28 +6,28 @@ import (
 )
 
 type UserRouter struct {
-	apiRouter    fiber.Router
-	userStrategy user.Strategy
+	apiRouter   fiber.Router
+	userUseCase *user.UseCase
 }
 
 func NewUserRouter(
 	apiRouter fiber.Router,
-	userStrategy user.Strategy,
+	userUseCase *user.UseCase,
 ) *UserRouter {
 	return &UserRouter{
-		apiRouter:    apiRouter,
-		userStrategy: userStrategy,
+		apiRouter:   apiRouter,
+		userUseCase: userUseCase,
 	}
 }
 
 func (r *UserRouter) Setup() {
 	userRouter := r.apiRouter.Group("/users")
 
-	userRouter.Get("/", r.userStrategy.GetUsers)
+	userRouter.Get("/", r.userUseCase.GetUsers.Handler)
 
-	userRouter.Post("/", r.userStrategy.CreateUser)
+	userRouter.Post("/", r.userUseCase.CreateUser.Handler)
 
-	userRouter.Put("/:user_id", r.userStrategy.UpdateUser)
+	userRouter.Put("/:user_id", r.userUseCase.UpdateUser.Handler)
 
-	userRouter.Delete("/:user_id", r.userStrategy.DeleteUser)
+	userRouter.Delete("/:user_id", r.userUseCase.DeleteUser.Handler)
 }

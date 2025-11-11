@@ -6,23 +6,23 @@ import (
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 )
 
-type service interface {
-	UpdateUser(c *fiber.Ctx, req *Request, id int) error
+type Service interface {
+	Service(c *fiber.Ctx, req *Request, id int) error
 }
 
-type serviceImpl struct {
+type service struct {
 	userRepository repository.UserRepository
 }
 
 func newService(
 	userRepository repository.UserRepository,
-) service {
-	return &serviceImpl{
+) Service {
+	return &service{
 		userRepository: userRepository,
 	}
 }
 
-func (s *serviceImpl) UpdateUser(c *fiber.Ctx, req *Request, id int) error {
+func (s *service) Service(c *fiber.Ctx, req *Request, id int) error {
 	user := entity.User{
 		Base: entity.Base{
 			ID: id,

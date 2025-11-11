@@ -5,23 +5,23 @@ import (
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 )
 
-type service interface {
-	DeleteUser(c *fiber.Ctx, userID int) error
+type Service interface {
+	Service(c *fiber.Ctx, userID int) error
 }
 
-type serviceImpl struct {
+type service struct {
 	userRepository repository.UserRepository
 }
 
 func newService(
 	userRepository repository.UserRepository,
-) service {
-	return &serviceImpl{
+) Service {
+	return &service{
 		userRepository: userRepository,
 	}
 }
 
-func (s *serviceImpl) DeleteUser(c *fiber.Ctx, userID int) error {
+func (s *service) Service(c *fiber.Ctx, userID int) error {
 	if err := s.userRepository.DeleteUser(userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),

@@ -4,7 +4,7 @@ import "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golang
 
 func New(
 	userRepository repository.UserRepository,
-) Handler {
+) *Handler {
 	service := newService(userRepository)
 	handler := newHandler(service)
 

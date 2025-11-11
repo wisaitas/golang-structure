@@ -6,23 +6,23 @@ import (
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 )
 
-type service interface {
-	GetUsers(c *fiber.Ctx) error
+type Service interface {
+	Service(c *fiber.Ctx) error
 }
 
-type serviceImpl struct {
+type service struct {
 	userRepository repository.UserRepository
 }
 
 func newService(
 	userRepository repository.UserRepository,
-) service {
-	return &serviceImpl{
+) Service {
+	return &service{
 		userRepository: userRepository,
 	}
 }
 
-func (s *serviceImpl) GetUsers(c *fiber.Ctx) error {
+func (s *service) Service(c *fiber.Ctx) error {
 	users := []entity.User{}
 	if err := s.userRepository.GetUsers(&users); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{

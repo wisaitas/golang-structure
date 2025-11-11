@@ -1,8 +1,6 @@
-package updateuser
+package register
 
 import (
-	"strconv"
-
 	"github.com/gofiber/fiber/v2"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
 )
@@ -30,19 +28,11 @@ func (h *Handler) Handler(c *fiber.Ctx) error {
 		})
 	}
 
-	param := c.Params("user_id")
-	userID, err := strconv.Atoi(param)
-	if err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
-			"message": err.Error(),
-		})
-	}
-
 	if err := h.validator.ValidateStruct(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
 		})
 	}
 
-	return h.service.Service(c, &req, userID)
+	return h.service.Service(c, &req)
 }
