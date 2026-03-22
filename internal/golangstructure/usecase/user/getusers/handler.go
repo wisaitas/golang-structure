@@ -1,6 +1,6 @@
 package getusers
 
-import "github.com/gofiber/fiber/v2"
+import "github.com/gofiber/fiber/v3"
 
 type Handler struct {
 	service Service
@@ -14,6 +14,6 @@ func newHandler(
 	}
 }
 
-func (h *Handler) Handler(c *fiber.Ctx) error {
+func (h *Handler) Handler(c fiber.Ctx) error {
 	return h.service.Service(c)
 }

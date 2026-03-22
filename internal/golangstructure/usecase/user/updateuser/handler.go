@@ -3,7 +3,7 @@ package updateuser
 import (
 	"strconv"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
@@ -22,9 +22,9 @@ func newHandler(
 	}
 }
 
-func (h *Handler) Handler(c *fiber.Ctx) error {
+func (h *Handler) Handler(c fiber.Ctx) error {
 	req := Request{}
-	if err := c.BodyParser(&req); err != nil {
+	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
 		})

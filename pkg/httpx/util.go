@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func CheckStatusCode2xx(statusCode int) bool {
@@ -30,7 +30,7 @@ func TryParseJSON(b []byte) map[string]any {
 	return nil
 }
 
-func ReadMultipartForm(c *fiber.Ctx, limit int) map[string]any {
+func ReadMultipartForm(c fiber.Ctx, limit int) map[string]any {
 	form, err := c.MultipartForm()
 	if err != nil {
 		return nil
@@ -217,7 +217,7 @@ func MaskHeaders(headers map[string]string, maskMap map[string]string) map[strin
 	return result
 }
 
-func MaskQueryParams(c *fiber.Ctx, maskMap map[string]string) map[string]string {
+func MaskQueryParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 	if len(maskMap) == 0 {
 		return nil
 	}
@@ -243,7 +243,7 @@ func MaskQueryParams(c *fiber.Ctx, maskMap map[string]string) map[string]string 
 	return result
 }
 
-func MaskParams(c *fiber.Ctx, maskMap map[string]string) map[string]string {
+func MaskParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 	if len(maskMap) == 0 {
 		return nil
 	}

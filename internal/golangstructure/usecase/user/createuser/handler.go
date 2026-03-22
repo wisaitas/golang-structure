@@ -1,6 +1,6 @@
 package createuser
 
-import "github.com/gofiber/fiber/v2"
+import "github.com/gofiber/fiber/v3"
 
 type Handler struct {
 	service Service
@@ -14,9 +14,9 @@ func newHandler(
 	}
 }
 
-func (h *Handler) Handler(c *fiber.Ctx) error {
+func (h *Handler) Handler(c fiber.Ctx) error {
 	req := Request{}
-	if err := c.BodyParser(&req); err != nil {
+	if err := c.Bind().Body(&req); err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
 		})

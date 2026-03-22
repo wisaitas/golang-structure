@@ -7,31 +7,31 @@ type ErrorContext struct {
 
 type StandardResponse[T any] struct {
 	Timestamp     string      `json:"timestamp"`
-	StatusCode    int         `json:"status_code"`
+	StatusCode    int         `json:"statusCode"`
 	Code          string      `json:"code"`
 	Data          *T          `json:"data"`
 	Pagination    *Pagination `json:"pagination,omitempty"`
-	PublicMessage *string     `json:"public_message,omitempty"`
+	PublicMessage *string     `json:"publicMessage,omitempty"`
 }
 
 type Pagination struct {
 	Page          int   `json:"page"`
-	PageSize      int   `json:"page_size"`
-	HasNext       bool  `json:"has_next"`
-	HasPrev       bool  `json:"has_prev"`
-	TotalElements int   `json:"total_elements"`
+	PageSize      int   `json:"pageSize"`
+	HasNext       bool  `json:"hasNext"`
+	HasPrev       bool  `json:"hasPrev"`
+	TotalElements int   `json:"totalElements"`
 	Windows       []int `json:"windows"`
 }
 
 type PaginationQuery struct {
 	Page     *int `query:"page"`
-	PageSize *int `query:"page_size"`
+	PageSize *int `query:"pageSize"`
 }
 
 type Log struct {
-	TraceID    string `json:"trace_id"`
+	TraceID    string `json:"traceId"`
 	Timestamp  string `json:"timestamp"`
-	DurationMs string `json:"duration_ms"`
+	DurationMs string `json:"durationMs"`
 
 	Current *Block `json:"current"`
 	Source  *Block `json:"source,omitempty"`
@@ -40,9 +40,9 @@ type Log struct {
 type Block struct {
 	Service      string  `json:"service"`
 	Method       string  `json:"method"`
-	ErrorMessage *string `json:"error_message,omitempty"`
+	ErrorMessage *string `json:"errorMessage,omitempty"`
 	Path         string  `json:"path"`
-	StatusCode   string  `json:"status_code"`
+	StatusCode   string  `json:"statusCode"`
 	Code         string  `json:"code"`
 	File         *string `json:"file,omitempty"`
 	Request      *Body   `json:"request"`

@@ -1,13 +1,13 @@
 package updateuser
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 )
 
 type Service interface {
-	Service(c *fiber.Ctx, req *Request, id int) error
+	Service(c fiber.Ctx, req *Request, id int) error
 }
 
 type service struct {
@@ -22,7 +22,7 @@ func newService(
 	}
 }
 
-func (s *service) Service(c *fiber.Ctx, req *Request, id int) error {
+func (s *service) Service(c fiber.Ctx, req *Request, id int) error {
 	user := entity.User{
 		Base: entity.Base{
 			ID: id,

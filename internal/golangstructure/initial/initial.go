@@ -2,19 +2,28 @@ package initial
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/caarlos0/env/v11"
+	"github.com/joho/godotenv"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/sqlx"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 )
 
 func init() {
-	if err := env.Parse(&golangstructure.ENV); err != nil {
-		panic(err)
+	for _, path := range []string{".env", "../.env", "../../.env"} {
+		if err := godotenv.Load(path); err == nil {
+			break
+		}
+	}
+
+	if err := env.Parse(&golangstructure.Config); err != nil {
+		log.Fatalln(err)
 	}
 }
 
@@ -24,11 +33,14 @@ type App struct {
 }
 
 func New() *App {
+	fmt.Println(golangstructure.Config)
 	config := newConfig()
 	sdk := newSDK()
 	repository := newRepository(config)
 	useCase := newUseCase(repository, sdk)
-	app := fiber.New()
+	app := fiber.New(fiber.Config{
+		AppName: golangstructure.Config.Service.Name,
+	})
 	newMiddleware(app)
 
 	newRouter(app, useCase)
@@ -41,7 +53,7 @@ func New() *App {
 
 func (a *App) Run() {
 	go func() {
-		if err := a.FiberApp.Listen(":" + golangstructure.ENV.Port); err != nil {
+		if err := a.FiberApp.Listen(fmt.Sprintf(":%d", golangstructure.Config.Service.Port)); err != nil {
 			panic(err)
 		}
 	}()
@@ -52,12 +64,7 @@ func (a *App) Run() {
 }
 
 func (a *App) Shutdown() {
-	sqlDB, err := a.config.postgresDB.DB()
-	if err != nil {
-		panic(err)
-	}
-
-	if err := sqlDB.Close(); err != nil {
+	if err := sqlx.Close(a.config.sqlDB); err != nil {
 		panic(err)
 	}
 

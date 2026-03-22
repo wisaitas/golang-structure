@@ -3,13 +3,13 @@ package register
 import (
 	"strings"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type Service interface {
-	Service(c *fiber.Ctx, request *Request) error
+	Service(c fiber.Ctx, request *Request) error
 }
 
 type service struct {
@@ -24,7 +24,7 @@ func newService(
 	}
 }
 
-func (s *service) Service(c *fiber.Ctx, request *Request) error {
+func (s *service) Service(c fiber.Ctx, request *Request) error {
 	user := s.mapRequestToEntity(request)
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)

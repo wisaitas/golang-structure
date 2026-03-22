@@ -1,13 +1,13 @@
 package getusers
 
 import (
-	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 )
 
 type Service interface {
-	Service(c *fiber.Ctx) error
+	Service(c fiber.Ctx) error
 }
 
 type service struct {
@@ -22,7 +22,7 @@ func newService(
 	}
 }
 
-func (s *service) Service(c *fiber.Ctx) error {
+func (s *service) Service(c fiber.Ctx) error {
 	users := []entity.User{}
 	if err := s.userRepository.GetUsers(&users); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
