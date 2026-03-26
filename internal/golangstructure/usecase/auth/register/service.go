@@ -1,54 +1,52 @@
 package register
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
-	"golang.org/x/crypto/bcrypt"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
 type Service interface {
-	Service(c fiber.Ctx, request *Request) error
+	Service(c fiber.Ctx, request *Request) httpx.StandardResponse[error]
 }
 
 type service struct {
 	userRepository repository.UserRepository
+	bcrypt         bcryptx.Bcrypt
 }
 
 func newService(
 	userRepository repository.UserRepository,
+	bcrypt bcryptx.Bcrypt,
 ) Service {
 	return &service{
 		userRepository: userRepository,
+		bcrypt:         bcrypt,
 	}
 }
 
-func (s *service) Service(c fiber.Ctx, request *Request) error {
+func (s *service) Service(c fiber.Ctx, request *Request) httpx.StandardResponse[error] {
 	user := s.mapRequestToEntity(request)
 
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	hashedPassword, err := s.bcrypt.GenerateFromPassword(user.Password, golangstructure.Config.Bcrypt.Cost)
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": err.Error(),
-		})
+		return fmt.Errorf("[service] : %w", err)
 	}
 
 	user.Password = string(hashedPassword)
 
 	if err := s.userRepository.CreateUser(user); err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
-			return c.Status(fiber.StatusConflict).JSON(fiber.Map{
-				"message": err.Error(),
-			})
+			return httpx.NewErrorResponse[any](c, fiber.StatusConflict, err)
 		}
 
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
-			"message": err.Error(),
-		})
+		return httpx.NewErrorResponse[any](c, fiber.StatusInternalServerError, err)
 	}
 
-	return c.Status(fiber.StatusCreated).JSON(fiber.Map{
-		"message": "user registered successfully",
-	})
+	return httpx.NewSuccessResponse[any](c, nil, fiber.StatusCreated, nil, nil)
 }

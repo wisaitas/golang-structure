@@ -6,5 +6,6 @@ import (
 )
 
 func newMiddleware(app *fiber.App) {
+	app.Use(middleware.Logger())
 	app.Use(middleware.Cors())
 }

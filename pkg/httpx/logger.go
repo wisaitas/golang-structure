@@ -12,21 +12,7 @@ import (
 	"github.com/google/uuid"
 )
 
-func WithMaskMap(maskMap map[string]string) LoggerOption {
-	return func(c *loggerConfig) {
-		c.maskMap = maskMap
-	}
-}
-
-func NewLogger(serviceName string, opts ...LoggerOption) fiber.Handler {
-	config := &loggerConfig{
-		maskMap: make(map[string]string),
-	}
-
-	for _, opt := range opts {
-		opt(config)
-	}
-
+func NewLogger(serviceName string, config LoggerConfig) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		traceID := c.Get(HeaderTraceID)
 		if traceID == "" {
@@ -36,11 +22,11 @@ func NewLogger(serviceName string, opts ...LoggerOption) fiber.Handler {
 		c.Request().Header.Set(HeaderTraceID, traceID)
 		c.Set(HeaderTraceID, traceID)
 
-		return HandleJSON(c, serviceName, config.maskMap)
+		return HandleJSON(c, serviceName, config.MaskMap)
 	}
 }
 
-func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessage ...string) error {
+func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessage *string) error {
 	if err == nil {
 		return nil
 	}
@@ -73,13 +59,8 @@ func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessa
 
 	c.Locals("errorContext", ErrorContext{
 		FilePath:     &filePath,
-		ErrorMessage: err.Error(),
+		ErrorMessage: fmt.Sprintf("[httpx] : %s", err.Error()),
 	})
-
-	var msg *string
-	if len(publicMessage) > 0 {
-		msg = &publicMessage[0]
-	}
 
 	return c.Status(statusCode).JSON(&StandardResponse[T]{
 		Timestamp:     time.Now().Format(time.RFC3339),
@@ -87,7 +68,7 @@ func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessa
 		Data:          new(T),
 		Code:          code,
 		Pagination:    nil,
-		PublicMessage: msg,
+		PublicMessage: publicMessage,
 	})
 }
 

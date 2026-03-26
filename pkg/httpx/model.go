@@ -54,8 +54,6 @@ type Body struct {
 	Body    map[string]any    `json:"body,omitempty"`
 }
 
-type LoggerOption func(*loggerConfig)
-
-type loggerConfig struct {
-	maskMap map[string]string
+type LoggerConfig struct {
+	MaskMap map[string]string
 }

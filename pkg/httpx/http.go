@@ -65,5 +65,3 @@ func Client[T any](c fiber.Ctx, method string, url string, req any, resp *Standa
 
 	return nil
 }
-
-// fiber:context-methods migrated

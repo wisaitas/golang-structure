@@ -2,15 +2,19 @@ package sqlx
 
 import (
 	"fmt"
+	"io"
 	"log"
+	"os"
 	"strings"
 	"time"
 
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 func NewSQLDB(config Config) (*gorm.DB, error) {
@@ -37,7 +41,20 @@ func NewSQLDB(config Config) (*gorm.DB, error) {
 		return nil, fmt.Errorf("[sqlx] unsupported driver: %s", config.Driver)
 	}
 
-	db, err := gorm.Open(dialector, &config.Config)
+	gcfg := config.Config
+	if m := mask.ParsePatternMap(config.MaskPattern); len(m) > 0 {
+		gcfg.Logger = logger.New(
+			log.New(&sqlLogMaskWriter{w: os.Stdout, m: m}, "\r\n", log.LstdFlags),
+			logger.Config{
+				SlowThreshold:             200 * time.Millisecond,
+				LogLevel:                  logger.Warn,
+				Colorful:                  true,
+				IgnoreRecordNotFoundError: true,
+			},
+		)
+	}
+
+	db, err := gorm.Open(dialector, &gcfg)
 	if err != nil {
 		return nil, fmt.Errorf("[sqlx] failed to open postgres connection: %w", err)
 	}
@@ -79,4 +96,18 @@ func Close(db *gorm.DB) error {
 	}
 
 	return nil
+}
+
+type sqlLogMaskWriter struct {
+	w io.Writer
+	m map[string]string
+}
+
+func (w *sqlLogMaskWriter) Write(p []byte) (n int, err error) {
+	if len(w.m) == 0 {
+		return w.w.Write(p)
+	}
+	out := mask.MaskSQLLogLine(string(p), w.m)
+	_, err = w.w.Write([]byte(out))
+	return len(p), err
 }

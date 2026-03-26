@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
 )
 
 func CheckStatusCode2xx(statusCode int) bool {
@@ -89,7 +90,7 @@ func MaskData(data map[string]any, maskMap map[string]string) map[string]any {
 		masked := false
 		for maskKey, maskValue := range maskMap {
 			if strings.EqualFold(k, maskKey) {
-				result[k] = applyMask(v, maskValue)
+				result[k] = maskFieldValue(v, maskValue)
 				masked = true
 				break
 			}
@@ -110,42 +111,12 @@ func MaskData(data map[string]any, maskMap map[string]string) map[string]any {
 	return result
 }
 
-func applyMask(value any, maskPattern string) any {
-	strValue, ok := value.(string)
+func maskFieldValue(value any, pattern string) string {
+	s, ok := value.(string)
 	if !ok {
-		strValue = toString(value)
+		s = toString(value)
 	}
-
-	length := len(strValue)
-
-	if maskPattern == "*" {
-		if length <= 2 {
-			return "**"
-		}
-		if length == 3 {
-			return string(strValue[0]) + "*" + string(strValue[2])
-		}
-		maskLen := length - 2
-		return string(strValue[0]) + strings.Repeat("*", maskLen) + string(strValue[length-1])
-	}
-
-	if maskPattern == "**" {
-		if length <= 4 {
-			return "**"
-		}
-		maskLen := length - 4
-		return strValue[:2] + strings.Repeat("*", maskLen) + strValue[length-2:]
-	}
-
-	if maskPattern == "***" {
-		if length <= 6 {
-			return "***"
-		}
-		maskLen := length - 6
-		return strValue[:3] + strings.Repeat("*", maskLen) + strValue[length-3:]
-	}
-
-	return maskPattern
+	return mask.MaskPlainString(s, pattern)
 }
 
 func toString(value any) string {
@@ -200,11 +171,7 @@ func MaskHeaders(headers map[string]string, maskMap map[string]string) map[strin
 		masked := false
 		for maskKey, maskValue := range maskMap {
 			if strings.EqualFold(k, maskKey) {
-				if maskedValue, ok := applyMask(v, maskValue).(string); ok {
-					result[k] = maskedValue
-				} else {
-					result[k] = maskValue
-				}
+				result[k] = mask.MaskPlainString(v, maskValue)
 				masked = true
 				break
 			}
@@ -230,7 +197,7 @@ func MaskQueryParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 		masked := false
 		for maskKey, maskValue := range maskMap {
 			if strings.EqualFold(keyStr, maskKey) {
-				result[keyStr] = maskValue
+				result[keyStr] = mask.MaskPlainString(valueStr, maskValue)
 				masked = true
 				break
 			}
@@ -255,7 +222,7 @@ func MaskParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 		masked := false
 		for maskKey, maskValue := range maskMap {
 			if strings.EqualFold(paramName, maskKey) {
-				result[paramName] = maskValue
+				result[paramName] = mask.MaskPlainString(paramValue, maskValue)
 				masked = true
 				break
 			}
