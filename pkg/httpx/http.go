@@ -47,12 +47,8 @@ func Client[T any](c fiber.Ctx, method string, url string, req any, resp *Standa
 		return fmt.Errorf("[httpx] : %w", err)
 	}
 
-	if !CheckStatusCode2xx(respHttp.StatusCode) {
-		resp.Data = nil
-		resp.Pagination = nil
-		c.Locals("errorContext", ErrorContext{
-			ErrorMessage: fmt.Sprintf("[httpx] : error when call %s", url),
-		})
+	if resp.StatusCode == 0 {
+		resp.StatusCode = http.StatusBadGateway
 	}
 
 	return nil
