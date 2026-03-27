@@ -4,15 +4,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"runtime"
 	"strconv"
 	"time"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
 )
 
-func NewLogger(serviceName string, config LoggerConfig) fiber.Handler {
+func NewLogger(config LoggerConfig) fiber.Handler {
 	return func(c fiber.Ctx) error {
 		traceID := c.Get(HeaderTraceID)
 		if traceID == "" {
@@ -22,7 +22,7 @@ func NewLogger(serviceName string, config LoggerConfig) fiber.Handler {
 		c.Request().Header.Set(HeaderTraceID, traceID)
 		c.Set(HeaderTraceID, traceID)
 
-		return HandleJSON(c, serviceName, config.MaskMap)
+		return HandleJSON(c, config.ServiceName, config.MaskMapPattern)
 	}
 }
 
@@ -50,16 +50,15 @@ func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessa
 		code = "E50000"
 	}
 
-	_, file, line, ok := runtime.Caller(1)
-	if !ok {
-		log.Println("[httpx] : runtime.Caller failed")
+	errorMessage := FormatErrorChain(err)
+	if errorMessage == "" {
+		errorMessage = err.Error()
 	}
-
-	filePath := fmt.Sprintf("%s:%d", file, line)
+	stackTraces := BuildErrorStackTraces(err)
 
 	c.Locals("errorContext", ErrorContext{
-		FilePath:     &filePath,
-		ErrorMessage: fmt.Sprintf("[httpx] : %s", err.Error()),
+		ErrorMessage: fmt.Sprintf("[httpx] : %s", errorMessage),
+		StackTraces:  stackTraces,
 	})
 
 	return c.Status(statusCode).JSON(&StandardResponse[T]{
@@ -97,8 +96,9 @@ func NewSuccessResponse[T any](c fiber.Ctx, data *T, statusCode int, pagination 
 
 }
 
-func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) error {
+func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 	start := time.Now()
+	maskMap := mask.ParsePatternMap(maskMapPattern)
 
 	var payload map[string]any
 	contentType := string(c.Request().Header.ContentType())
@@ -163,7 +163,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) erro
 		Request:      &Body{Headers: requestHeaders, Body: payload},
 		Response:     &Body{Headers: responseHeaders, Body: responsePayload},
 		ErrorMessage: &errorContext.ErrorMessage,
-		File:         errorContext.FilePath,
+		StackTraces:  errorContext.StackTraces,
 	}
 
 	logInfo := Log{
@@ -186,8 +186,8 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) erro
 			Method:       c.Method(),
 			Path:         c.Hostname() + string(c.Request().URI().RequestURI()),
 			StatusCode:   strconv.Itoa(c.Response().StatusCode()),
-			File:         errorContext.FilePath,
 			ErrorMessage: &errorContext.ErrorMessage,
+			StackTraces:  errorContext.StackTraces,
 			Request:      &Body{Headers: requestHeaders, Body: payload},
 			Response:     &Body{Headers: responseHeaders, Body: responsePayload},
 		}

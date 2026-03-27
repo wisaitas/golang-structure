@@ -8,7 +8,10 @@ import (
 func main() {
 	app := fiber.New()
 
-	app.Use(httpx.NewLogger("dummy-service"))
+	app.Use(httpx.NewLogger(httpx.LoggerConfig{
+		ServiceName:    "dummy-service",
+		MaskMapPattern: "{}",
+	}))
 
 	app.Listen(":3000")
 }

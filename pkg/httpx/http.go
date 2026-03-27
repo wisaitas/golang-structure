@@ -4,9 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
-	"runtime"
 
 	"github.com/gofiber/fiber/v3"
 )
@@ -50,15 +48,9 @@ func Client[T any](c fiber.Ctx, method string, url string, req any, resp *Standa
 	}
 
 	if !CheckStatusCode2xx(respHttp.StatusCode) {
-		_, file, line, ok := runtime.Caller(1)
-		if !ok {
-			log.Println("[httpx] : runtime.Caller failed")
-		}
-		filePath := fmt.Sprintf("%s:%d", file, line)
 		resp.Data = nil
 		resp.Pagination = nil
 		c.Locals("errorContext", ErrorContext{
-			FilePath:     &filePath,
 			ErrorMessage: fmt.Sprintf("[httpx] : error when call %s", url),
 		})
 	}

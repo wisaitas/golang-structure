@@ -7,5 +7,8 @@ import (
 )
 
 func Logger() fiber.Handler {
-	return httpx.NewLogger(golangstructure.Config.Service.Name, httpx.WithMaskPatternJSON(golangstructure.Config.Service.MaskPattern))
+	return httpx.NewLogger(httpx.LoggerConfig{
+		ServiceName:    golangstructure.Config.Service.Name,
+		MaskMapPattern: golangstructure.Config.Service.MaskPattern,
+	})
 }

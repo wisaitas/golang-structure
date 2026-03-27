@@ -15,7 +15,7 @@ func newUseCase(
 	sdk *sdk,
 ) *useCase {
 	return &useCase{
-		authUseCase: auth.New(repository.userRepository, sdk.validator),
+		authUseCase: auth.New(repository.userRepository, sdk.validator, sdk.bcrypt),
 		userUseCase: user.New(repository.userRepository, sdk.validator),
 	}
 }

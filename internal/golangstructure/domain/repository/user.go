@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 
 	"gorm.io/gorm"
 )
@@ -28,7 +29,10 @@ func NewUserRepository(
 }
 
 func (r *userRepository) CreateUser(user *entity.User) error {
-	return r.db.Create(&user).Error
+	if err := r.db.Create(&user).Error; err != nil {
+		return httpx.WrapError("register.repo.create_user", err, 0)
+	}
+	return nil
 }
 
 func (r *userRepository) GetUsers(users *[]entity.User) error {

@@ -1,8 +1,8 @@
 package httpx
 
 type ErrorContext struct {
-	FilePath     *string `json:"filePath"`
-	ErrorMessage string  `json:"errorMessage"`
+	ErrorMessage string   `json:"errorMessage"`
+	StackTraces  []string `json:"stackTraces,omitempty"`
 }
 
 type StandardResponse[T any] struct {
@@ -38,15 +38,16 @@ type Log struct {
 }
 
 type Block struct {
-	Service      string  `json:"service"`
-	Method       string  `json:"method"`
-	ErrorMessage *string `json:"errorMessage,omitempty"`
-	Path         string  `json:"path"`
-	StatusCode   string  `json:"statusCode"`
-	Code         string  `json:"code"`
-	File         *string `json:"file,omitempty"`
-	Request      *Body   `json:"request"`
-	Response     *Body   `json:"response"`
+	Service      string   `json:"service"`
+	Method       string   `json:"method"`
+	ErrorMessage *string  `json:"errorMessage,omitempty"`
+	Path         string   `json:"path"`
+	StatusCode   string   `json:"statusCode"`
+	Code         string   `json:"code"`
+	StackTraces  []string `json:"stackTraces,omitempty"`
+	DBLog        []string `json:"dbLog,omitempty"`
+	Request      *Body    `json:"request"`
+	Response     *Body    `json:"response"`
 }
 
 type Body struct {
@@ -55,5 +56,6 @@ type Body struct {
 }
 
 type LoggerConfig struct {
-	MaskMap map[string]string
+	ServiceName    string
+	MaskMapPattern string
 }

@@ -1,7 +1,6 @@
 package register
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
@@ -12,7 +11,7 @@ import (
 )
 
 type Service interface {
-	Service(c fiber.Ctx, request *Request) httpx.StandardResponse[error]
+	Service(request *Request) error
 }
 
 type service struct {
@@ -30,23 +29,23 @@ func newService(
 	}
 }
 
-func (s *service) Service(c fiber.Ctx, request *Request) httpx.StandardResponse[error] {
+func (s *service) Service(request *Request) error {
 	user := s.mapRequestToEntity(request)
 
 	hashedPassword, err := s.bcrypt.GenerateFromPassword(user.Password, golangstructure.Config.Bcrypt.Cost)
 	if err != nil {
-		return fmt.Errorf("[service] : %w", err)
+		return httpx.WrapError("register.service.hash_password", err, fiber.StatusInternalServerError)
 	}
 
 	user.Password = string(hashedPassword)
 
 	if err := s.userRepository.CreateUser(user); err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
-			return httpx.NewErrorResponse[any](c, fiber.StatusConflict, err)
+			return httpx.WrapError("register.service.create_user", err, fiber.StatusConflict)
 		}
 
-		return httpx.NewErrorResponse[any](c, fiber.StatusInternalServerError, err)
+		return httpx.WrapError("register.service.create_user", err, fiber.StatusInternalServerError)
 	}
 
-	return httpx.NewSuccessResponse[any](c, nil, fiber.StatusCreated, nil, nil)
+	return nil
 }
