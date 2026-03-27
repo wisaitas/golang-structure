@@ -41,7 +41,7 @@ func (h *Handler) Handler(c fiber.Ctx) error {
 		)
 	}
 
-	if err := h.service.Service(req); err != nil {
+	if err := h.service.Service(httpx.RequestContext(c), req); err != nil {
 		statusCode := httpx.StatusCodeFromError(err, fiber.StatusInternalServerError)
 		err = httpx.WrapError("register.handler.service", err, statusCode)
 		return httpx.NewErrorResponse[any](c, statusCode, err, nil)

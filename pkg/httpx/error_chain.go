@@ -124,3 +124,15 @@ func BuildErrorStackTraces(err error) []string {
 	}
 	return traces
 }
+
+func RootErrorMessage(err error) string {
+	if err == nil {
+		return ""
+	}
+
+	last := err
+	for current := err; current != nil; current = errors.Unwrap(current) {
+		last = current
+	}
+	return last.Error()
+}

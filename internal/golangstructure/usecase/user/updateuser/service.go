@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
 type Service interface {
@@ -31,7 +32,7 @@ func (s *service) Service(c fiber.Ctx, req *Request, id int) error {
 		Age:  req.Age,
 	}
 
-	if err := s.userRepository.ReplaceUser(&user); err != nil {
+	if err := s.userRepository.ReplaceUser(httpx.RequestContext(c), &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})

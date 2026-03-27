@@ -1,13 +1,13 @@
 package sqlx
 
 import (
+	"context"
 	"fmt"
-	"io"
 	"log"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
@@ -15,6 +15,7 @@ import (
 	"gorm.io/driver/sqlserver"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
+	"gorm.io/gorm/utils"
 )
 
 func NewSQLDB(config Config) (*gorm.DB, error) {
@@ -42,16 +43,10 @@ func NewSQLDB(config Config) (*gorm.DB, error) {
 	}
 
 	gcfg := config.Config
-	if m := mask.ParsePatternMap(config.MaskPattern); len(m) > 0 {
-		gcfg.Logger = logger.New(
-			log.New(&sqlLogMaskWriter{w: os.Stdout, m: m}, "\r\n", log.LstdFlags),
-			logger.Config{
-				SlowThreshold:             200 * time.Millisecond,
-				LogLevel:                  logger.Warn,
-				Colorful:                  true,
-				IgnoreRecordNotFoundError: true,
-			},
-		)
+	maskMap := mask.ParsePatternMap(config.MaskPattern)
+	gcfg.Logger = &collectDBLogger{
+		maskMap:  maskMap,
+		logLevel: logger.Warn,
 	}
 
 	db, err := gorm.Open(dialector, &gcfg)
@@ -98,16 +93,54 @@ func Close(db *gorm.DB) error {
 	return nil
 }
 
-type sqlLogMaskWriter struct {
-	w io.Writer
-	m map[string]string
+type collectDBLogger struct {
+	maskMap  map[string]string
+	logLevel logger.LogLevel
 }
 
-func (w *sqlLogMaskWriter) Write(p []byte) (n int, err error) {
-	if len(w.m) == 0 {
-		return w.w.Write(p)
+func (l *collectDBLogger) LogMode(level logger.LogLevel) logger.Interface {
+	return &collectDBLogger{maskMap: l.maskMap, logLevel: level}
+}
+
+func (l *collectDBLogger) Info(ctx context.Context, msg string, data ...interface{}) {
+}
+
+func (l *collectDBLogger) Warn(ctx context.Context, msg string, data ...interface{}) {
+}
+
+func (l *collectDBLogger) Error(ctx context.Context, msg string, data ...interface{}) {
+}
+
+func (l *collectDBLogger) Trace(ctx context.Context, begin time.Time, fc func() (string, int64), err error) {
+	if l.logLevel == logger.Silent {
+		return
 	}
-	out := mask.MaskSQLLogLine(string(p), w.m)
-	_, err = w.w.Write([]byte(out))
-	return len(p), err
+
+	sql, rows := fc()
+	if len(l.maskMap) > 0 {
+		sql = mask.MaskSQLLogLine(sql, l.maskMap)
+	}
+
+	var errMsg *string
+	if err != nil {
+		msg := err.Error()
+		errMsg = &msg
+	}
+
+	httpx.AddDBLog(ctx, httpx.DBLog{
+		Source:     normalizeSourcePath(utils.FileWithLineNum()),
+		SQL:        sql,
+		Rows:       rows,
+		DurationMs: time.Since(begin).Milliseconds(),
+		Error:      errMsg,
+	})
+}
+
+func normalizeSourcePath(source string) string {
+	const marker = "/golang-structure/"
+	idx := strings.Index(source, marker)
+	if idx == -1 {
+		return source
+	}
+	return source[idx+1:]
 }

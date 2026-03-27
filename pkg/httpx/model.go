@@ -45,7 +45,7 @@ type Block struct {
 	StatusCode   string   `json:"statusCode"`
 	Code         string   `json:"code"`
 	StackTraces  []string `json:"stackTraces,omitempty"`
-	DBLog        []string `json:"dbLog,omitempty"`
+	DBLogs       []DBLog  `json:"dbLogs,omitempty"`
 	Request      *Body    `json:"request"`
 	Response     *Body    `json:"response"`
 }
@@ -58,4 +58,12 @@ type Body struct {
 type LoggerConfig struct {
 	ServiceName    string
 	MaskMapPattern string
+}
+
+type DBLog struct {
+	Source     string  `json:"source"`
+	SQL        string  `json:"sql"`
+	Rows       int64   `json:"rows"`
+	DurationMs int64   `json:"durationMs"`
+	Error      *string `json:"error,omitempty"`
 }

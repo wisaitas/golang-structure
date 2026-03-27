@@ -50,7 +50,7 @@ func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessa
 		code = "E50000"
 	}
 
-	errorMessage := FormatErrorChain(err)
+	errorMessage := RootErrorMessage(err)
 	if errorMessage == "" {
 		errorMessage = err.Error()
 	}
@@ -99,6 +99,8 @@ func NewSuccessResponse[T any](c fiber.Ctx, data *T, statusCode int, pagination 
 func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 	start := time.Now()
 	maskMap := mask.ParsePatternMap(maskMapPattern)
+	requestContext := WithDBLogCollector(c.Context())
+	c.Locals("requestContext", requestContext)
 
 	var payload map[string]any
 	contentType := string(c.Request().Header.ContentType())
@@ -164,6 +166,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		Response:     &Body{Headers: responseHeaders, Body: responsePayload},
 		ErrorMessage: &errorContext.ErrorMessage,
 		StackTraces:  errorContext.StackTraces,
+		DBLogs:       GetDBLogs(requestContext),
 	}
 
 	logInfo := Log{
@@ -188,6 +191,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 			StatusCode:   strconv.Itoa(c.Response().StatusCode()),
 			ErrorMessage: &errorContext.ErrorMessage,
 			StackTraces:  errorContext.StackTraces,
+			DBLogs:       GetDBLogs(requestContext),
 			Request:      &Body{Headers: requestHeaders, Body: payload},
 			Response:     &Body{Headers: responseHeaders, Body: responsePayload},
 		}

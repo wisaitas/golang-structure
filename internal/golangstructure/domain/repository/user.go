@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"time"
 
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
@@ -10,10 +11,10 @@ import (
 )
 
 type UserRepository interface {
-	CreateUser(user *entity.User) error
-	GetUsers(users *[]entity.User) error
-	ReplaceUser(user *entity.User) error
-	DeleteUser(userID int) error
+	CreateUser(ctx context.Context, user *entity.User) error
+	GetUsers(ctx context.Context, users *[]entity.User) error
+	ReplaceUser(ctx context.Context, user *entity.User) error
+	DeleteUser(ctx context.Context, userID int) error
 }
 
 type userRepository struct {
@@ -28,21 +29,21 @@ func NewUserRepository(
 	}
 }
 
-func (r *userRepository) CreateUser(user *entity.User) error {
-	if err := r.db.Create(&user).Error; err != nil {
+func (r *userRepository) CreateUser(ctx context.Context, user *entity.User) error {
+	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
 		return httpx.WrapError("register.repo.create_user", err, 0)
 	}
 	return nil
 }
 
-func (r *userRepository) GetUsers(users *[]entity.User) error {
-	return r.db.Where("deleted_at IS NULL").Find(&users).Error
+func (r *userRepository) GetUsers(ctx context.Context, users *[]entity.User) error {
+	return r.db.WithContext(ctx).Where("deleted_at IS NULL").Find(&users).Error
 }
 
-func (r *userRepository) ReplaceUser(user *entity.User) error {
-	return r.db.Updates(&user).Error
+func (r *userRepository) ReplaceUser(ctx context.Context, user *entity.User) error {
+	return r.db.WithContext(ctx).Updates(&user).Error
 }
 
-func (r *userRepository) DeleteUser(userID int) error {
-	return r.db.Model(&entity.User{}).Where("id = ?", userID).Updates(map[string]interface{}{"deleted_at": time.Now()}).Error
+func (r *userRepository) DeleteUser(ctx context.Context, userID int) error {
+	return r.db.WithContext(ctx).Model(&entity.User{}).Where("id = ?", userID).Updates(map[string]interface{}{"deleted_at": time.Now()}).Error
 }

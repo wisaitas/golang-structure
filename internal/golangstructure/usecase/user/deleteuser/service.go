@@ -3,6 +3,7 @@ package deleteuser
 import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
 type Service interface {
@@ -22,7 +23,7 @@ func newService(
 }
 
 func (s *service) Service(c fiber.Ctx, userID int) error {
-	if err := s.userRepository.DeleteUser(userID); err != nil {
+	if err := s.userRepository.DeleteUser(httpx.RequestContext(c), userID); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})
