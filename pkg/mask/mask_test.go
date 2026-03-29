@@ -12,14 +12,12 @@ func TestMaskPlainString_NM(t *testing.T) {
 }
 
 func TestMaskPlainString_SuffixMarker(t *testing.T) {
-	// local part masked, domain @gmail.com visible
 	if got := MaskPlainString("test01@gmail.com", "4:@gmail.com"); got != "test**@gmail.com" {
 		t.Fatalf("suffix: got %q", got)
 	}
 }
 
 func TestMaskPlainString_SuffixMarkerMiddleNoise(t *testing.T) {
-	// marker in the middle → whole string N:0
 	if got := MaskPlainString("me@yahoo.com", "4:@gmail.com"); got != "me@y********" {
 		t.Fatalf("no suffix match: got %q", got)
 	}
@@ -32,7 +30,6 @@ func TestMaskPlainString_PrefixMarker(t *testing.T) {
 }
 
 func TestMaskPlainString_EmbeddedMarker(t *testing.T) {
-	// Suffix @gmail.com at end; core before it is masked with 4:0 → @gma** + @gmail.com
 	if got := MaskPlainString("@gmail@gmail.com", "4:@gmail.com"); got != "@gma**@gmail.com" {
 		t.Fatalf("embedded: got %q", got)
 	}

@@ -7,9 +7,6 @@ import (
 
 var ansiSeq = regexp.MustCompile(`\x1b\[[0-9;]*m`)
 
-// MaskSQLLogLine masks literal values in INSERT ... VALUES for columns listed in colMask.
-// Keys are column names (case-insensitive); values are MaskPlainString patterns.
-// If colMask is empty or the line is not a recognizable INSERT, the input is returned unchanged (cheap path).
 func MaskSQLLogLine(line string, colMask map[string]string) string {
 	if len(colMask) == 0 {
 		return line

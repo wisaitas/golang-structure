@@ -1,8 +1,9 @@
 package main
 
 import (
-	"fmt"
+	"errors"
 	"net/http"
+	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
@@ -22,8 +23,10 @@ func main() {
 			return httpx.NewErrorResponse[any](
 				c,
 				fiber.StatusBadRequest,
-				httpx.WrapError("dummy.register.bind_body", err, fiber.StatusBadRequest),
+				httpx.CodeBadRequest,
+				httpx.WrapErrorWithCode("[main.post]", err, fiber.StatusBadRequest, httpx.CodeBadRequest),
 				nil,
+				"[main.post]",
 			)
 		}
 
@@ -42,16 +45,25 @@ func main() {
 			return httpx.NewErrorResponse[any](
 				c,
 				statusCode,
-				httpx.WrapError("dummy.register.call_golang_structure", err, statusCode),
+				httpx.CodeBadGateway,
+				httpx.WrapError("[orchestrate]", err, statusCode),
 				nil,
+				"",
 			)
 		}
+
 		if !httpx.CheckStatusCode2xx(resp.StatusCode) {
+			apiCode := resp.Code
+			if apiCode == "" {
+				apiCode = httpx.CodeForHTTPStatus(resp.StatusCode)
+			}
 			return httpx.NewErrorResponse[any](
 				c,
 				resp.StatusCode,
-				httpx.WrapError("dummy.register.call_golang_structure", fmt.Errorf("downstream returned status %d", resp.StatusCode), resp.StatusCode),
+				apiCode,
+				httpx.WrapError("[orchestrate]", errors.New("downstream returned status "+strconv.Itoa(resp.StatusCode)), resp.StatusCode),
 				nil,
+				"",
 			)
 		}
 

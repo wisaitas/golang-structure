@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -190,7 +191,7 @@ func MaskQueryParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 	}
 
 	result := make(map[string]string)
-	c.Request().URI().QueryArgs().VisitAll(func(key, value []byte) {
+	for key, value := range c.Request().URI().QueryArgs().All() {
 		keyStr := string(key)
 		valueStr := string(value)
 
@@ -205,7 +206,7 @@ func MaskQueryParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 		if !masked {
 			result[keyStr] = valueStr
 		}
-	})
+	}
 
 	return result
 }
@@ -232,5 +233,55 @@ func MaskParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 		}
 	}
 
+	return result
+}
+
+func RequestContext(c fiber.Ctx) context.Context {
+	ctx, ok := c.Locals("requestContext").(context.Context)
+	if ok && ctx != nil {
+		return ctx
+	}
+	return c.Context()
+}
+
+func WithDBLogCollector(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, dbLogContextKey{}, &dbLogCollector{logs: make([]DBLog, 0, 8)})
+}
+
+func AddDBLog(ctx context.Context, dbLog DBLog) {
+	if ctx == nil {
+		return
+	}
+	collector, ok := ctx.Value(dbLogContextKey{}).(*dbLogCollector)
+	if !ok || collector == nil {
+		return
+	}
+
+	collector.mu.Lock()
+	collector.logs = append(collector.logs, dbLog)
+	collector.mu.Unlock()
+}
+
+func GetDBLogs(ctx context.Context) []DBLog {
+	if ctx == nil {
+		return nil
+	}
+	collector, ok := ctx.Value(dbLogContextKey{}).(*dbLogCollector)
+	if !ok || collector == nil {
+		return nil
+	}
+
+	collector.mu.Lock()
+	defer collector.mu.Unlock()
+
+	if len(collector.logs) == 0 {
+		return nil
+	}
+
+	result := make([]DBLog, len(collector.logs))
+	copy(result, collector.logs)
 	return result
 }

@@ -2,6 +2,7 @@ package repository
 
 import (
 	"context"
+	"net/http"
 	"time"
 
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
@@ -18,20 +19,22 @@ type UserRepository interface {
 }
 
 type userRepository struct {
-	db *gorm.DB
+	operation string
+	db        *gorm.DB
 }
 
 func NewUserRepository(
 	db *gorm.DB,
 ) UserRepository {
 	return &userRepository{
-		db: db,
+		operation: "[user.repository]",
+		db:        db,
 	}
 }
 
 func (r *userRepository) CreateUser(ctx context.Context, user *entity.User) error {
 	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
-		return httpx.WrapError("register.repo.create_user", err, 0)
+		return httpx.WrapError(r.operation, err, http.StatusInternalServerError)
 	}
 	return nil
 }

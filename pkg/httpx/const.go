@@ -22,3 +22,65 @@ var HttpClient = &http.Client{
 		ExpectContinueTimeout: 1 * time.Second,  // เวลาสูงสุดที่รอการตอบกลับ "100 Continue" จากเซิร์ฟเวอร์ก่อนส่งข้อมูล request body
 	},
 }
+
+const (
+	ErrorCodeConnectionRefused = "E50000"
+)
+
+type ErrorCode string
+
+type ResponseCode string
+
+func (c ResponseCode) String() string {
+	return string(c)
+}
+
+const (
+	// 2xx
+	CodeOK        ResponseCode = "E20000"
+	CodeCreated   ResponseCode = "E20001"
+	CodeNoContent ResponseCode = "E20004"
+
+	// 3xx
+	CodeNotModified ResponseCode = "E30400"
+
+	// 4xx
+	CodeBadRequest   ResponseCode = "E40000"
+	CodeUnauthorized ResponseCode = "E40002"
+	CodeForbidden    ResponseCode = "E40003"
+	CodeNotFound     ResponseCode = "E40004"
+	CodeConflict     ResponseCode = "E40900"
+
+	// 5xx
+	CodeInternal   ResponseCode = "E50000"
+	CodeBadGateway ResponseCode = "E50200"
+)
+
+func CodeForHTTPStatus(statusCode int) ResponseCode {
+	switch statusCode {
+	case 304:
+		return CodeNotModified
+	case 400:
+		return CodeBadRequest
+	case 401:
+		return CodeUnauthorized
+	case 403:
+		return CodeForbidden
+	case 404:
+		return CodeNotFound
+	case 409:
+		return CodeConflict
+	case 502:
+		return CodeBadGateway
+	case 500:
+		return CodeInternal
+	default:
+		if statusCode >= 200 && statusCode < 300 {
+			return CodeOK
+		}
+		if statusCode >= 400 && statusCode < 500 {
+			return CodeBadRequest
+		}
+		return CodeInternal
+	}
+}

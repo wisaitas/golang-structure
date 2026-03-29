@@ -1,17 +1,19 @@
 package httpx
 
+import "sync"
+
 type ErrorContext struct {
 	ErrorMessage string   `json:"errorMessage"`
 	StackTraces  []string `json:"stackTraces,omitempty"`
 }
 
 type StandardResponse[T any] struct {
-	Timestamp     string      `json:"timestamp"`
-	StatusCode    int         `json:"statusCode"`
-	Code          string      `json:"code"`
-	Data          *T          `json:"data"`
-	Pagination    *Pagination `json:"pagination,omitempty"`
-	PublicMessage *string     `json:"publicMessage,omitempty"`
+	Timestamp     string       `json:"timestamp"`
+	StatusCode    int          `json:"statusCode"`
+	Code          ResponseCode `json:"code"`
+	Data          *T           `json:"data"`
+	Pagination    *Pagination  `json:"pagination,omitempty"`
+	PublicMessage *string      `json:"publicMessage,omitempty"`
 }
 
 type Pagination struct {
@@ -66,4 +68,11 @@ type DBLog struct {
 	Rows       int64   `json:"rows"`
 	DurationMs int64   `json:"durationMs"`
 	Error      *string `json:"error,omitempty"`
+}
+
+type dbLogContextKey struct{}
+
+type dbLogCollector struct {
+	mu   sync.Mutex
+	logs []DBLog
 }

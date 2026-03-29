@@ -30,6 +30,6 @@ type Config struct {
 	ConnMaxLifetime time.Duration `env:"SQLDB_CONN_MAX_LIFETIME"`
 	Driver          string        `env:"SQLDB_DRIVER"`
 	Stage           string        `env:"SERVICE_STAGE"`
-	MaskPattern string `env:"MASK_PATTERN"` // JSON: patterns — see pkg/mask.MaskPlainString
+	MaskPattern     string        `env:"MASK_PATTERN"`
 	gorm.Config     `env:"-"`
 }

@@ -26,28 +26,18 @@ func NewLogger(config LoggerConfig) fiber.Handler {
 	}
 }
 
-func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessage *string) error {
+func NewErrorResponse[T any](c fiber.Ctx, statusCode int, code ResponseCode, err error, publicMessage *string, wrapHandlerOp string) error {
 	if err == nil {
 		return nil
 	}
 
-	var code string
-
-	switch statusCode {
-	case 304:
-		code = "E30400"
-	case 400:
-		code = "E40000"
-	case 401:
-		code = "E40002"
-	case 403:
-		code = "E40003"
-	case 404:
-		code = "E40004"
-	case 500:
-		code = "E50000"
-	default:
-		code = "E50000"
+	if wrapHandlerOp != "" {
+		statusCode = StatusCodeFromError(err, fiber.StatusInternalServerError)
+		err = WrapError(wrapHandlerOp, err, statusCode)
+		code = ResponseCodeFromError(err)
+		if code == "" {
+			code = CodeForHTTPStatus(statusCode)
+		}
 	}
 
 	errorMessage := RootErrorMessage(err)
@@ -71,20 +61,7 @@ func NewErrorResponse[T any](c fiber.Ctx, statusCode int, err error, publicMessa
 	})
 }
 
-func NewSuccessResponse[T any](c fiber.Ctx, data *T, statusCode int, pagination *Pagination, publicMessage *string) error {
-	var code string
-
-	switch statusCode {
-	case 200:
-		code = "E20000"
-	case 201:
-		code = "E20001"
-	case 204:
-		code = "E20004"
-	default:
-		code = "E20000"
-	}
-
+func NewSuccessResponse[T any](c fiber.Ctx, data *T, statusCode int, code ResponseCode, pagination *Pagination, publicMessage *string) error {
 	return c.Status(statusCode).JSON(&StandardResponse[T]{
 		Timestamp:     time.Now().Format(time.RFC3339),
 		StatusCode:    statusCode,
@@ -94,6 +71,22 @@ func NewSuccessResponse[T any](c fiber.Ctx, data *T, statusCode int, pagination 
 		PublicMessage: publicMessage,
 	})
 
+}
+
+func orgCodeFromResponseBody(body map[string]any) string {
+	if body == nil {
+		return ""
+	}
+	raw, ok := body["code"]
+	if !ok || raw == nil {
+		return ""
+	}
+	switch v := raw.(type) {
+	case string:
+		return v
+	default:
+		return fmt.Sprint(v)
+	}
 }
 
 func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
@@ -116,11 +109,11 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 	}
 
 	requestHeaders := make(map[string]string)
-	c.Request().Header.VisitAll(func(key, value []byte) {
+	for key, value := range c.Request().Header.All() {
 		if string(key) != HeaderTraceID {
 			requestHeaders[string(key)] = string(value)
 		}
-	})
+	}
 
 	if len(maskMap) > 0 {
 		requestHeaders = MaskHeaders(requestHeaders, maskMap)
@@ -138,11 +131,11 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 	}
 
 	responseHeaders := make(map[string]string)
-	c.Response().Header.VisitAll(func(key, value []byte) {
+	for key, value := range c.Response().Header.All() {
 		if string(key) != HeaderTraceID && string(key) != HeaderSource {
 			responseHeaders[string(key)] = string(value)
 		}
-	})
+	}
 
 	if len(maskMap) > 0 {
 		responseHeaders = MaskHeaders(responseHeaders, maskMap)
@@ -157,11 +150,14 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		errorContext = &errorContextLocal
 	}
 
+	orgCode := orgCodeFromResponseBody(responsePayload)
+
 	current := &Block{
 		Service:      serviceName,
 		Method:       c.Method(),
 		Path:         c.Hostname() + string(c.Request().URI().RequestURI()),
 		StatusCode:   strconv.Itoa(c.Response().StatusCode()),
+		Code:         orgCode,
 		Request:      &Body{Headers: requestHeaders, Body: payload},
 		Response:     &Body{Headers: responseHeaders, Body: responsePayload},
 		ErrorMessage: &errorContext.ErrorMessage,
@@ -189,6 +185,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 			Method:       c.Method(),
 			Path:         c.Hostname() + string(c.Request().URI().RequestURI()),
 			StatusCode:   strconv.Itoa(c.Response().StatusCode()),
+			Code:         orgCode,
 			ErrorMessage: &errorContext.ErrorMessage,
 			StackTraces:  errorContext.StackTraces,
 			DBLogs:       GetDBLogs(requestContext),

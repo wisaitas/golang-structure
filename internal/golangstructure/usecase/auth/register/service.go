@@ -16,6 +16,7 @@ type Service interface {
 }
 
 type service struct {
+	operation      string
 	userRepository repository.UserRepository
 	bcrypt         bcryptx.Bcrypt
 }
@@ -25,6 +26,7 @@ func newService(
 	bcrypt bcryptx.Bcrypt,
 ) Service {
 	return &service{
+		operation:      "[register.service]",
 		userRepository: userRepository,
 		bcrypt:         bcrypt,
 	}
@@ -35,17 +37,17 @@ func (s *service) Service(ctx context.Context, request *Request) error {
 
 	hashedPassword, err := s.bcrypt.GenerateFromPassword(user.Password, golangstructure.Config.Bcrypt.Cost)
 	if err != nil {
-		return httpx.WrapError("register.service.hash_password", err, fiber.StatusInternalServerError)
+		return httpx.WrapErrorWithCode(s.operation, err, fiber.StatusInternalServerError, httpx.CodeInternal)
 	}
 
 	user.Password = string(hashedPassword)
 
 	if err := s.userRepository.CreateUser(ctx, user); err != nil {
 		if strings.Contains(err.Error(), "duplicate key") {
-			return httpx.WrapError("register.service.create_user", err, fiber.StatusConflict)
+			return httpx.WrapErrorWithCode(s.operation, err, fiber.StatusConflict, httpx.CodeConflict)
 		}
 
-		return httpx.WrapError("register.service.create_user", err, fiber.StatusInternalServerError)
+		return httpx.WrapErrorWithCode(s.operation, err, fiber.StatusInternalServerError, httpx.CodeInternal)
 	}
 
 	return nil

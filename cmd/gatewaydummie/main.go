@@ -22,8 +22,10 @@ func main() {
 			return httpx.NewErrorResponse[any](
 				c,
 				fiber.StatusBadRequest,
+				httpx.CodeBadRequest,
 				httpx.WrapError("dummy.register.bind_body", err, fiber.StatusBadRequest),
 				nil,
+				"",
 			)
 		}
 
@@ -42,16 +44,24 @@ func main() {
 			return httpx.NewErrorResponse[any](
 				c,
 				statusCode,
+				httpx.CodeBadGateway,
 				httpx.WrapError("dummy.register.call_golang_structure", err, statusCode),
 				nil,
+				"",
 			)
 		}
 		if !httpx.CheckStatusCode2xx(resp.StatusCode) {
+			apiCode := resp.Code
+			if apiCode == "" {
+				apiCode = httpx.CodeForHTTPStatus(resp.StatusCode)
+			}
 			return httpx.NewErrorResponse[any](
 				c,
 				resp.StatusCode,
+				apiCode,
 				httpx.WrapError("dummy.register.call_golang_structure", fmt.Errorf("downstream returned status %d", resp.StatusCode), resp.StatusCode),
 				nil,
+				"",
 			)
 		}
 

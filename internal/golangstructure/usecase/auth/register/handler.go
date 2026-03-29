@@ -7,6 +7,7 @@ import (
 )
 
 type Handler struct {
+	operation string
 	service   Service
 	validator validatorx.Validator
 }
@@ -16,6 +17,7 @@ func newHandler(
 	validator validatorx.Validator,
 ) *Handler {
 	return &Handler{
+		operation: "[register.handler]",
 		service:   service,
 		validator: validator,
 	}
@@ -27,8 +29,10 @@ func (h *Handler) Handler(c fiber.Ctx) error {
 		return httpx.NewErrorResponse[any](
 			c,
 			fiber.StatusBadRequest,
-			httpx.WrapError("register.handler.bind_body", err, fiber.StatusBadRequest),
+			httpx.CodeBadRequest,
+			httpx.WrapErrorWithCode(h.operation, err, fiber.StatusBadRequest, httpx.CodeBadRequest),
 			nil,
+			"",
 		)
 	}
 
@@ -36,16 +40,16 @@ func (h *Handler) Handler(c fiber.Ctx) error {
 		return httpx.NewErrorResponse[any](
 			c,
 			fiber.StatusBadRequest,
-			httpx.WrapError("register.handler.validate", err, fiber.StatusBadRequest),
+			httpx.CodeBadRequest,
+			httpx.WrapErrorWithCode(h.operation, err, fiber.StatusBadRequest, httpx.CodeBadRequest),
 			nil,
+			"",
 		)
 	}
 
 	if err := h.service.Service(httpx.RequestContext(c), req); err != nil {
-		statusCode := httpx.StatusCodeFromError(err, fiber.StatusInternalServerError)
-		err = httpx.WrapError("register.handler.service", err, statusCode)
-		return httpx.NewErrorResponse[any](c, statusCode, err, nil)
+		return httpx.NewErrorResponse[any](c, 0, "", err, nil, h.operation)
 	}
 
-	return httpx.NewSuccessResponse[any](c, nil, fiber.StatusCreated, nil, nil)
+	return httpx.NewSuccessResponse[any](c, nil, fiber.StatusCreated, httpx.CodeCreated, nil, nil)
 }
