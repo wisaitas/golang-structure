@@ -1,4 +1,38 @@
 services:
+  # ── Application Services ──────────────────────────────────────────────
+  golang-structure:
+    build:
+      context: .
+      dockerfile: deployment/golang-structure/Dockerfile
+    container_name: golang-structure
+    command: ["./bin/golangstructure"]
+    ports:
+      - 8080:8080
+    environment:
+      SERVICE_NAME: golang-structure-service
+      SERVICE_PORT: 8080
+      SERVICE_STAGE: dev
+      MASK_PATTERN: '{"password":"4:2","email":"4:com"}'
+      SQLDB_HOST: postgres
+      SQLDB_PORT: 5432
+      SQLDB_USER: admin
+      SQLDB_PASSWORD: postgres
+      SQLDB_DB_NAME: golang-structure-db
+      SQLDB_SSL_MODE: disable
+      SQLDB_MAX_IDLE_CONNS: 10
+      SQLDB_MAX_OPEN_CONNS: 100
+      SQLDB_CONN_MAX_LIFETIME: 1h
+      SQLDB_DRIVER: postgres
+    labels:
+      logging: "promtail"
+      logging_jobname: "golang-structure"
+    depends_on:
+      postgres:
+        condition: service_started
+    networks:
+      - app-network
+
+  # ── Database ──────────────────────────────────────────────────────────
   postgres:
     image: postgres:18-alpine
     container_name: postgres
@@ -9,12 +43,76 @@ services:
       POSTGRES_PASSWORD: postgres
       POSTGRES_DB: golang-structure-db
     volumes:
-      - postgres-data:/var/lib/postgresql
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - app-network
+
+  # ── Observability ─────────────────────────────────────────────────────
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: loki
+    ports:
+      - 3100:3100
+    volumes:
+      - ./deployment/loki/loki-config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - app-network
+
+  tempo:
+    image: grafana/tempo:2.7.2
+    container_name: tempo
+    ports:
+      - 3200:3200   # HTTP
+      - 4317:4317   # OTLP gRPC
+      - 4318:4318   # OTLP HTTP
+    volumes:
+      - ./deployment/tempo/tempo-config.yaml:/etc/tempo/tempo.yaml
+      - tempo-data:/var/tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    networks:
+      - app-network
+
+  promtail:
+    image: grafana/promtail:3.5.0
+    container_name: promtail
+    volumes:
+      - ./deployment/promtail/promtail-config.yaml:/etc/promtail/config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:11.6.0
+    container_name: grafana
+    ports:
+      - 3001:3000
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_USERS_DEFAULT_THEME: dark
+      GF_EXPLORE_ENABLED: "true"
+    volumes:
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning
+      - ./deployment/grafana/dashboards:/var/lib/grafana/dashboards
+      - grafana-data:/var/lib/grafana
+    depends_on:
+      - loki
+      - tempo
     networks:
       - app-network
 
 volumes:
   postgres-data:
+  loki-data:
+  tempo-data:
+  grafana-data:
 
 networks:
   app-network:

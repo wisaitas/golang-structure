@@ -3,12 +3,21 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"os"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func main() {
+	orchestrateURL := getEnv("ORCHESTRATE_URL", "http://localhost:8081")
 	app := fiber.New()
 
 	app.Use(httpx.NewLogger(httpx.LoggerConfig{
@@ -33,7 +42,7 @@ func main() {
 		if err := httpx.Client(
 			c,
 			http.MethodPost,
-			"http://localhost:8081/register",
+			orchestrateURL+"/register",
 			req,
 			resp,
 		); err != nil {

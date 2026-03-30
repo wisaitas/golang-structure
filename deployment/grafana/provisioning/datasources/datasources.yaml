@@ -1,0 +1,39 @@
+apiVersion: 1
+
+datasources:
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki:3100
+    isDefault: true
+    editable: true
+    jsonData:
+      maxLines: 1000
+      derivedFields:
+        - datasourceUid: tempo
+          matcherRegex: '"traceId"\s*:\s*"([^"]+)"'
+          name: TraceID
+          url: "$${__value.raw}"
+          urlDisplayLabel: "View in Tempo"
+        - datasourceUid: loki
+          matcherRegex: '"traceId"\s*:\s*"([^"]+)"'
+          name: "Related Logs"
+          url: '/explore?left=["now-1h","now","Loki",{"expr":"{compose_service=~\".+\"} |= \"$${__value.raw}\""}]'
+          urlDisplayLabel: "Search TraceID in Logs"
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    editable: true
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: false
+        customQuery: true
+        query: '{compose_service=~".+"} |= "$${__trace.traceId}"'
+      nodeGraph:
+        enabled: true
+      lokiSearch:
+        datasourceUid: loki

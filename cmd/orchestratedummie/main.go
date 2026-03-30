@@ -3,13 +3,22 @@ package main
 import (
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
 func main() {
+	backendURL := getEnv("BACKEND_URL", "http://localhost:8080")
 	app := fiber.New()
 
 	app.Use(httpx.NewLogger(httpx.LoggerConfig{
@@ -34,7 +43,7 @@ func main() {
 		if err := httpx.Client(
 			c,
 			http.MethodPost,
-			"http://localhost:8080/api/v1/auth/register",
+			backendURL+"/api/v1/auth/register",
 			req,
 			resp,
 		); err != nil {
