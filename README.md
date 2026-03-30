@@ -24,8 +24,8 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 
 ```
                            ┌────────────────┐
-                           │    Grafana      │ :3001
-                           │   Dashboards    │
+                           │    Grafana     │ :3001
+                           │   Dashboards   │
                            └───────┬────────┘
                                    │ query
                    ┌───────────────┼────────────────┐
@@ -42,13 +42,13 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
                  │ Docker logs   │
     ┌────────────┼───────────────┼────────────────┐
     ▼            ▼               ▼                ▼
-┌────────┐ ┌───────────┐ ┌─────────────────┐ ┌──────────┐
+┌────────┐ ┌────────────┐ ┌─────────────────┐ ┌──────────┐
 │Gateway │ │Orchestrator│ │golang-structure │ │ Postgres │
 │ :3000  │ │  :8081     │ │     :8080       │ │  :5432   │
 └───┬────┘ └─────┬──────┘ └───────┬─────────┘ └──────────┘
     │            │                │
-    │ X-Trace-Id │  X-Trace-Id   │
-    │ X-Source   │  X-Source     │
+    │ X-Trace-Id │  X-Trace-Id    │
+    │ X-Source   │  X-Source      │
     └──►─────────└──►─────────────┘
 ```
 
@@ -80,9 +80,9 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │   │   ├── config.go                       #     DB connection setup
 │   │   ├── middleware.go                   #     Middleware registration
 │   │   ├── router.go                       #     Route group wiring
-│   │   ├── repository.go                  #     Repository construction
+│   │   ├── repository.go                   #     Repository construction
 │   │   ├── sdk.go                          #     External SDK setup
-│   │   └── use_case.go                    #     Use case construction
+│   │   └── use_case.go                     #     Use case construction
 │   ├── middleware/
 │   │   ├── prometheus.go                   #   Prometheus metrics middleware
 │   │   ├── logger.go                       #   Structured JSON logging middleware
@@ -118,14 +118,14 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │
 ├── deployment/                             # Infrastructure configs
 │   ├── golang-structure/Dockerfile         #   Multi-stage Go build
-│   ├── loki/loki-config.yaml              #   Loki log storage config
-│   ├── tempo/tempo-config.yaml            #   Tempo trace storage config
-│   ├── prometheus/prometheus.yaml         #   Prometheus scrape config
-│   ├── alloy/config.alloy                 #   Grafana Alloy log collection pipeline
+│   ├── loki/loki-config.yaml               #   Loki log storage config
+│   ├── tempo/tempo-config.yaml             #   Tempo trace storage config
+│   ├── prometheus/prometheus.yaml          #   Prometheus scrape config
+│   ├── alloy/config.alloy                  #   Grafana Alloy log collection pipeline
 │   └── grafana/
 │       ├── provisioning/
-│       │   ├── datasources/datasources.yaml  # Loki + Prometheus + Tempo
-│       │   └── dashboards/dashboards.yaml    # Dashboard auto-discovery
+│       │   ├── datasources/datasources.yaml   # Loki + Prometheus + Tempo
+│       │   └── dashboards/dashboards.yaml     # Dashboard auto-discovery
 │       └── dashboards/
 │           ├── golang-structure.json          # Service dashboard (metrics + logs)
 │           └── centralized-logs.json          # Centralized log dashboard
@@ -141,7 +141,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 ## Tech Stack
 
 | Category | Technology |
-|----------|-----------|
+|----------|------------|
 | Language | Go 1.26 |
 | HTTP Framework | Fiber v3 |
 | ORM | GORM (PostgreSQL, MySQL, SQLite, SQL Server) |
@@ -193,33 +193,33 @@ make gateway-run       # terminal 3
 
 ### Access Points
 
-| Service | URL | Credentials |
-|---------|-----|-------------|
-| Main API | http://localhost:8080 | - |
-| Gateway (demo) | http://localhost:3000 | - |
-| Orchestrator (demo) | http://localhost:8081 | - |
-| Grafana | http://localhost:3001 | admin / admin |
-| Prometheus | http://localhost:9090 | - |
-| Loki API | http://localhost:3100 | - |
-| Tempo API | http://localhost:3200 | - |
-| Alloy UI | http://localhost:12345 | - |
+| Service             | URL                    | Credentials   |
+|---------------------|------------------------|---------------|
+| Main API            | http://localhost:8080  | -             |
+| Gateway (demo)      | http://localhost:3000  | -             |
+| Orchestrator (demo) | http://localhost:8081  | -             |
+| Grafana             | http://localhost:3001  | admin / admin |
+| Prometheus          | http://localhost:9090  | -             |
+| Loki API            | http://localhost:3100  | -             |
+| Tempo API           | http://localhost:3200  | -             |
+| Alloy UI            | http://localhost:12345 | -             |
 
 ## API Endpoints
 
-| Method | Path | Description |
-|--------|------|-------------|
-| `POST` | `/api/v1/auth/register` | Register a new user |
-| `GET` | `/api/v1/users/` | List users |
-| `POST` | `/api/v1/users/` | Create user |
-| `PUT` | `/api/v1/users/:user_id` | Update user |
-| `DELETE` | `/api/v1/users/:user_id` | Delete user |
-| `GET` | `/metrics` | Prometheus metrics endpoint |
+| Method   | Path                     | Description                 |
+|----------|--------------------------|-----------------------------|
+| `POST`   | `/api/v1/auth/register`  | Register a new user         |
+| `GET`    | `/api/v1/users/`         | List users                  |
+| `POST`   | `/api/v1/users/`         | Create user                 |
+| `PUT`    | `/api/v1/users/:user_id` | Update user                 |
+| `DELETE` | `/api/v1/users/:user_id` | Delete user                 |
+| `GET`    | `/metrics`               | Prometheus metrics endpoint |
 
 **Demo chain** (distributed tracing):
 
-| Service | Endpoint | Forwards to |
-|---------|----------|-------------|
-| Gateway `:3000` | `POST /register` | Orchestrator `:8081` |
+| Service              | Endpoint         | Forwards to                           |
+|----------------------|------------------|---------------------------------------|
+| Gateway `:3000`      | `POST /register` | Orchestrator `:8081`                  |
 | Orchestrator `:8081` | `POST /register` | Main API `:8080/api/v1/auth/register` |
 
 ## Custom Distributed Tracing
@@ -282,10 +282,10 @@ Gateway log:
 
 #### 3. Key Headers
 
-| Header | Purpose |
-|--------|---------|
-| `X-Trace-Id` | Correlation ID shared across all services in a request chain |
-| `X-Source` | JSON-serialized `Block` from downstream, nested to form a call chain |
+| Header            | Purpose                                                                |
+|-------------------|------------------------------------------------------------------------|
+| `X-Trace-Id`      | Correlation ID shared across all services in a request chain           |
+| `X-Source`        | JSON-serialized `Block` from downstream, nested to form a call chain   |
 | `X-Internal-Call` | Set to `"true"` on inter-service calls; controls `X-Source` visibility |
 
 ## Structured JSON Log Format
@@ -334,38 +334,38 @@ Every HTTP request produces a single JSON log line to stdout:
 
 ### Log Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `traceId` | string | UUID correlating logs across services |
-| `timestamp` | string | Request start time (RFC3339) |
-| `durationMs` | string | Total request processing time |
-| `current` | Block | This service's request data |
-| `source` | Block | Downstream service chain (nested) |
+| Field         | Type  | Description                                 |
+|--------------|--------|---------------------------------------------|
+| `traceId`    | string | UUID correlating logs across services       |
+| `timestamp`  | string | Request start time (RFC3339)                |
+| `durationMs` | string | Total request processing time               |
+| `current`    | Block  | This service's request data                 |
+| `source`     | Block  | Downstream service chain (nested)           |
 
 ### Block Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `service` | string | Service name |
-| `method` | string | HTTP method |
-| `path` | string | Request path |
-| `statusCode` | string | HTTP status code |
-| `code` | string | Application response code (e.g. `E50000`) |
-| `errorMessage` | string | Root error message |
-| `stackTraces` | []string | Error stack trace chain |
-| `dbLogs` | []DBLog | SQL queries executed during this request |
-| `request` | Body | Masked request headers + body |
-| `response` | Body | Masked response headers + body |
+| Field          | Type     | Description                               |
+|----------------|----------|-------------------------------------------|
+| `service`      | string   | Service name                              |
+| `method`       | string   | HTTP method                               |
+| `path`         | string   | Request path                              |
+| `statusCode`   | string   | HTTP status code                          |
+| `code`         | string   | Application response code (e.g. `E50000`) |
+| `errorMessage` | string   | Root error message                        |
+| `stackTraces`  | []string | Error stack trace chain                   |
+| `dbLogs`       | []DBLog  | SQL queries executed during this request  |
+| `request`      | Body     | Masked request headers + body             |
+| `response`     | Body     | Masked response headers + body            |
 
 ### DBLog Fields
 
-| Field | Type | Description |
-|-------|------|-------------|
-| `source` | string | File and line number |
-| `sql` | string | Masked SQL query |
-| `rows` | int | Rows affected |
-| `durationMs` | int | Query execution time |
-| `error` | string | Query error (if any) |
+| Field        | Type   | Description          |
+|--------------|--------|----------------------|
+| `source`     | string | File and line number |
+| `sql`        | string | Masked SQL query     |
+| `rows`       | int    | Rows affected        |
+| `durationMs` | int    | Query execution time |
+| `error`      | string | Query error (if any) |
 
 ## Data Masking
 
@@ -379,9 +379,9 @@ MASK_PATTERN={"password":"4:2","email":"4:com"}
 
 ### Pattern Syntax
 
-| Pattern | Input | Output | Description |
-|---------|-------|--------|-------------|
-| `"4:2"` | `12345678` | `1234**78` | Keep 4 prefix chars, 2 suffix chars |
+| Pattern   | Input              | Output           | Description                                       |
+|-----------|--------------------|------------------|---------------------------------------------------|
+| `"4:2"`   | `12345678`         | `1234**78`       | Keep 4 prefix chars, 2 suffix chars               |
 | `"4:com"` | `user@example.com` | `user@******com` | Keep 4 prefix chars, find "com" marker for suffix |
 
 ### What Gets Masked
@@ -403,23 +403,23 @@ app.Use(middleware.Prometheus(app))
 
 ### Exposed Metrics
 
-| Metric | Type | Labels | Description |
-|--------|------|--------|-------------|
-| `http_requests_total` | Counter | `method`, `path`, `status_code`, `service` | Total HTTP request count |
+| Metric                          | Type      | Labels                                     | Description                        |
+|---------------------------------|-----------|--------------------------------------------|------------------------------------|
+| `http_requests_total`           | Counter   | `method`, `path`, `status_code`, `service` | Total HTTP request count           |
 | `http_request_duration_seconds` | Histogram | `method`, `path`, `status_code`, `service` | Request latency (buckets: 5ms–10s) |
-| `http_requests_in_flight` | Gauge | `service` | Currently processing requests |
+| `http_requests_in_flight`       | Gauge     | `service`                                  | Currently processing requests      |
 
 ### Go Runtime Metrics (auto-exposed)
 
 The `prometheus/client_golang` library automatically exposes Go runtime metrics at `/metrics`:
-
-| Metric | Description |
-|--------|-------------|
-| `go_goroutines` | Number of goroutines |
-| `go_threads` | Number of OS threads |
-| `go_memstats_heap_alloc_bytes` | Heap memory allocated |
-| `go_memstats_stack_inuse_bytes` | Stack memory in use |
-| `go_gc_duration_seconds` | GC pause duration |
+ 
+| Metric                          | Description           |
+|---------------------------------|-----------------------|
+| `go_goroutines`                 | Number of goroutines  |
+| `go_threads`                    | Number of OS threads  |
+| `go_memstats_heap_alloc_bytes`  | Heap memory allocated |
+| `go_memstats_stack_inuse_bytes` | Stack memory in use   |
+| `go_gc_duration_seconds`        | GC pause duration     |
 
 ## Observability Stack
 
@@ -427,30 +427,30 @@ The `prometheus/client_golang` library automatically exposes Go runtime metrics 
 ┌──────────────────────────────────────────────────────────────────┐
 │                        Docker Compose                            │
 │                                                                  │
-│  ┌─────────────┐  stdout  ┌──────────┐  push   ┌──────┐        │
-│  │ App Service  │ ───────► │  Alloy   │ ──────► │ Loki │        │
-│  │ (JSON logs)  │          │  :12345  │         └──┬───┘        │
-│  │              │          └──────────┘            │             │
-│  │  /metrics ◄──── Prometheus (:9090)              │ query       │
-│  │  (promx)     │          │                    ┌──▼─────┐      │
-│  └─────────────┘           │   ┌────────┐      │Grafana │      │
-│                            └──►│ TSDB   │─────►│ :3001  │      │
-│  ┌─────────────┐               └────────┘      └──▲─────┘      │
-│  │   Tempo     │ ◄────────────────────────────────┘ query       │
-│  │  (traces)   │                                                │
-│  └─────────────┘                                                │
+│  ┌─────────────┐  stdout  ┌──────────┐  push   ┌──────┐          │
+│  │ App Service │ ───────► │  Alloy   │ ──────► │ Loki │          │
+│  │ (JSON logs) │          │  :12345  │         └──┬───┘          │ 
+│  │             │          └──────────┘            │              │
+│  │  /metrics ◄──── Prometheus (:9090)             │ query        │
+│  │  (promx)    │           │                   ┌──▼─────┐        │
+│  └─────────────┘           │   ┌────────┐      │Grafana │        │
+│                            └──►│ TSDB   │─────►│ :3001  │        │
+│  ┌─────────────┐               └────────┘      └──▲─────┘        │
+│  │   Tempo     │ ◄────────────────────────────────┘ query        │
+│  │  (traces)   │                                                 │ 
+│  └─────────────┘                                                 │ 
 └──────────────────────────────────────────────────────────────────┘
-```
+` ``
 
 ### Components
 
-| Component | Role | Port |
-|-----------|------|------|
-| **Alloy** | Grafana's unified telemetry collector. Discovers Docker containers with label `logging=true`, scrapes stdout logs, parses JSON, extracts labels (`traceId`, `service`, `method`, `statusCode`, `code`), pushes to Loki. Built-in debug UI. | 12345 |
-| **Loki** | Log aggregation and storage. Indexes logs by labels for fast querying via LogQL. | 3100 |
-| **Prometheus** | Scrapes `/metrics` from Go app every 15s. Stores HTTP request metrics + Go runtime metrics. Query via PromQL. | 9090 |
-| **Tempo** | Distributed trace storage. Accepts OTLP gRPC/HTTP spans. Ready for future OTel instrumentation. | 3200, 4317, 4318 |
-| **Grafana** | Visualization. Pre-configured datasources (Loki + Prometheus + Tempo) with `traceId` correlation. | 3001 |
+| Component      | Role | Port |
+|----------------|---------------------------------------------------------------------------------------------------------------|-------|-
+| **Alloy**      | Grafana's unified telemetry collector. Discovers Docker containers with label `logging=true`, scrapes stdout logs, parses JSON, extracts labels (`traceId`, `service`, `method`, `statusCode`, `code`), pushes to Loki. Built-in debug UI.          | 12345 |
+| **Loki**       | Log aggregation and storage. Indexes logs by labels for fast querying via LogQL.                              | 3100  |
+| **Prometheus** | Scrapes `/metrics` from Go app every 15s. Stores HTTP request metrics + Go runtime metrics. Query via PromQL. | 9090  |
+| **Tempo**      | Distributed trace storage. Accepts OTLP gRPC/HTTP spans. Ready for future OTel instrumentation.               | 3200, 4317, 4318 |
+| **Grafana**    | Visualization. Pre-configured datasources (Loki + Prometheus + Tempo) with `traceId` correlation.             | 3001  |
 
 ### Alloy Pipeline
 
@@ -484,22 +484,22 @@ Open **Grafana** at http://localhost:3001 → **Dashboards** → **Golang Struct
 
 Single-page view combining **metrics + logs** for the service:
 
-| Section | Panels |
-|---------|--------|
+| Section          | Panels                                                                                                 |
+|------------------|--------------------------------------------------------------------------------------------------------|
 | **HTTP Metrics** | Request Rate, Error Rate (4xx+5xx), Duration (avg), Duration (p50/p90/p99), In-Flight, Total Requests, 5xx Errors, Avg Latency |
 | **Go Runtime** | Goroutines, Threads, Heap Alloc, Stack In Use, Goroutines Over Time, Memory Over Time, GC Pause Duration |
-| **Service Logs** | All Logs (golang-structure), Error Logs Only |
+| **Service Logs** | All Logs (golang-structure), Error Logs Only                                                           |
 
 #### 2. Centralized Logs
 
 Cross-service log aggregation with a **service dropdown filter**:
 
-| Section | Panels |
-|---------|--------|
-| **Overview** | Log Volume by Service (stacked bar), Total Requests, 5xx Errors, 4xx Errors, Avg Response Time |
-| **Error Analysis** | Errors by Status Code, Errors by Service |
-| **All Logs** | Logs from all selected services with JSON parsing |
-| **Error Logs** | Error logs only (4xx + 5xx) |
+| Section            | Panels                                                                                         |
+|--------------------|------------------------------------------------------------------------------------------------|
+| **Overview**       | Log Volume by Service (stacked bar), Total Requests, 5xx Errors, 4xx Errors, Avg Response Time |
+| **Error Analysis** | Errors by Status Code, Errors by Service                                                       |
+| **All Logs**       | Logs from all selected services with JSON parsing                                              |
+| **Error Logs**     | Error logs only (4xx + 5xx)                                                                    |
 
 ### Explore (Manual Queries)
 
@@ -572,37 +572,37 @@ You will see **3 log entries** — one from each service — all correlated by t
 
 ## Environment Variables
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `SERVICE_NAME` | `golang-structure` | Service name in logs and metrics |
-| `SERVICE_PORT` | `8080` | HTTP listen port |
-| `SERVICE_STAGE` | `dev` | Deployment stage |
-| `MASK_PATTERN` | `{}` | JSON masking rules |
-| `SQLDB_HOST` | - | Database host |
-| `SQLDB_PORT` | - | Database port |
-| `SQLDB_USER` | - | Database user |
-| `SQLDB_PASSWORD` | - | Database password |
-| `SQLDB_DB_NAME` | - | Database name |
-| `SQLDB_SSL_MODE` | - | SSL mode (disable/require) |
-| `SQLDB_MAX_IDLE_CONNS` | - | Max idle DB connections |
-| `SQLDB_MAX_OPEN_CONNS` | - | Max open DB connections |
-| `SQLDB_CONN_MAX_LIFETIME` | - | DB connection max lifetime |
-| `SQLDB_DRIVER` | - | DB driver (postgres/mysql/sqlite/sqlserver) |
-| `BCRYPT_COST` | `10` | bcrypt hashing cost |
+| Variable                  | Default            | Description                                 |
+|---------------------------|--------------------|---------------------------------------------|
+| `SERVICE_NAME`            | `golang-structure` | Service name in logs and metrics            |
+| `SERVICE_PORT`            | `8080`             | HTTP listen port                            |
+| `SERVICE_STAGE`           | `dev`              | Deployment stage                            |
+| `MASK_PATTERN`            | `{}`               | JSON masking rules                          |
+| `SQLDB_HOST`              | -                  | Database host                               |
+| `SQLDB_PORT`              | -                  | Database port                               |
+| `SQLDB_USER`              | -                  | Database user                               |
+| `SQLDB_PASSWORD`          | -                  | Database password                           |
+| `SQLDB_DB_NAME`           | -                  | Database name                               |
+| `SQLDB_SSL_MODE`          | -                  | SSL mode (disable/require)                  |
+| `SQLDB_MAX_IDLE_CONNS`    | -                  | Max idle DB connections                     |
+| `SQLDB_MAX_OPEN_CONNS`    | -                  | Max open DB connections                     |
+| `SQLDB_CONN_MAX_LIFETIME` | -                  | DB connection max lifetime                  |
+| `SQLDB_DRIVER`            | -                  | DB driver (postgres/mysql/sqlite/sqlserver) |
+| `BCRYPT_COST`             | `10`               | bcrypt hashing cost                         |
 
 ## Makefile Commands
 
-| Command | Description |
-|---------|-------------|
-| `make run` | Run main API locally |
-| `make gateway-run` | Run gateway demo locally |
-| `make orchestrate-run` | Run orchestrator demo locally |
-| `make up` | Docker: start full stack (build + up) |
-| `make down` | Docker: stop full stack |
-| `make logs` | Docker: follow all logs |
-| `make infra-up` | Docker: start DB + observability only |
-| `make infra-down` | Docker: stop observability stack |
-| `make infra-logs` | Docker: follow observability logs |
-| `make app-up` | Docker: build & start app services only |
-| `make app-down` | Docker: stop app services |
-| `make app-logs` | Docker: follow app service logs |
+| Command                | Description                             |
+|------------------------|-----------------------------------------|
+| `make run`             | Run main API locally                    |
+| `make gateway-run`     | Run gateway demo locally                |
+| `make orchestrate-run` | Run orchestrator demo locally           |
+| `make up`              | Docker: start full stack (build + up)   |
+| `make down`            | Docker: stop full stack                 |
+| `make logs`            | Docker: follow all logs                 |
+| `make infra-up`        | Docker: start DB + observability only   |
+| `make infra-down`      | Docker: stop observability stack        |
+| `make infra-logs`      | Docker: follow observability logs       |
+| `make app-up`          | Docker: build & start app services only |
+| `make app-down`        | Docker: stop app services               |
+| `make app-logs`        | Docker: follow app service logs         |
