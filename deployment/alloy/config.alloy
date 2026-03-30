@@ -1,0 +1,83 @@
+// ── Docker Discovery ────────────────────────────────────────────────────
+discovery.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  refresh_interval = "5s"
+
+  filter {
+    name   = "label"
+    values = ["logging=true"]
+  }
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_log_stream"]
+    target_label  = "logstream"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_logging_jobname"]
+    target_label  = "job"
+  }
+
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "compose_service"
+  }
+}
+
+// ── Log Collection ──────────────────────────────────────────────────────
+loki.source.docker "containers" {
+  host             = "unix:///var/run/docker.sock"
+  targets          = discovery.relabel.containers.output
+  forward_to       = [loki.process.json_pipeline.receiver]
+  refresh_interval = "5s"
+}
+
+// ── JSON Pipeline ───────────────────────────────────────────────────────
+loki.process "json_pipeline" {
+  forward_to = [loki.write.loki.receiver]
+
+  stage.json {
+    expressions = {
+      traceId    = "traceId",
+      timestamp  = "timestamp",
+      durationMs = "durationMs",
+      service    = "current.service",
+      method     = "current.method",
+      path       = "current.path",
+      statusCode = "current.statusCode",
+      code       = "current.code",
+    }
+  }
+
+  stage.labels {
+    values = {
+      traceId    = "",
+      service    = "",
+      method     = "",
+      statusCode = "",
+      code       = "",
+    }
+  }
+
+  stage.timestamp {
+    source = "timestamp"
+    format = "RFC3339"
+  }
+}
+
+// ── Loki Push ───────────────────────────────────────────────────────────
+loki.write "loki" {
+  endpoint {
+    url = "http://loki:3100/loki/api/v1/push"
+  }
+}

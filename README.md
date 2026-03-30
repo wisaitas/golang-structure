@@ -2,7 +2,7 @@
 
 Go REST API project with **custom distributed tracing** and **structured JSON logging** — designed as an alternative to OpenTelemetry that gives full control over log format, field masking, and cross-service correlation.
 
-Integrated with **Grafana + Loki + Tempo** observability stack for log aggregation, search, and visualization.
+Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability stack.
 
 ## Table of Contents
 
@@ -14,47 +14,52 @@ Integrated with **Grafana + Loki + Tempo** observability stack for log aggregati
 - [Custom Distributed Tracing](#custom-distributed-tracing)
 - [Structured JSON Log Format](#structured-json-log-format)
 - [Data Masking](#data-masking)
+- [Prometheus Metrics](#prometheus-metrics)
 - [Observability Stack](#observability-stack)
 - [Monitoring Guide](#monitoring-guide)
+- [Environment Variables](#environment-variables)
 - [Makefile Commands](#makefile-commands)
 
 ## Architecture
 
 ```
-                         ┌──────────────┐
-                         │   Grafana    │ :3001
-                         │  Dashboard   │
-                         └──────┬───────┘
-                                │ query
-                    ┌───────────┼───────────┐
-                    ▼           ▼           ▼
-              ┌──────────┐ ┌────────┐ ┌───────────┐
-              │   Loki   │ │ Tempo  │ │  Promtail │
-              │   :3100  │ │ :3200  │ │  (agent)  │
-              └──────────┘ └────────┘ └─────┬─────┘
-                    ▲                       │ scrapes Docker logs
-                    │ push                  │
-                    └───────────────────────┘
-                                │
-              ┌─────────────────┼─────────────────┐
-              ▼                 ▼                  ▼
-      ┌──────────────┐ ┌───────────────┐ ┌─────────────────┐
-      │   Gateway    │ │  Orchestrator │ │ golang-structure│
-      │   :3000      │ │   :8081       │ │     :8080       │
-      └──────┬───────┘ └──────┬────────┘ └───────┬─────────┘
-             │                │                  │
-             │  X-Trace-Id    │  X-Trace-Id      │
-             │  X-Source      │  X-Source        │
-             │  X-Internal    │  X-Internal      ▼
-             └─────►──────────└──────►────── ┌──────────┐
-                                             │ Postgres │
-                                             │  :5432   │
-                                             └──────────┘
+                           ┌────────────────┐
+                           │    Grafana      │ :3001
+                           │   Dashboards    │
+                           └───────┬────────┘
+                                   │ query
+                   ┌───────────────┼────────────────┐
+                   ▼               ▼                ▼
+            ┌──────────┐    ┌────────────┐    ┌──────────┐
+            │   Loki   │    │ Prometheus │    │  Tempo   │
+            │  :3100   │    │   :9090    │    │  :3200   │
+            └────▲─────┘    └─────▲──────┘    └──────────┘
+                 │ push           │ scrape /metrics
+            ┌────┴─────┐         │
+            │  Alloy   │         │
+            │ :12345   │         │
+            └────▲─────┘         │
+                 │ Docker logs   │
+    ┌────────────┼───────────────┼────────────────┐
+    ▼            ▼               ▼                ▼
+┌────────┐ ┌───────────┐ ┌─────────────────┐ ┌──────────┐
+│Gateway │ │Orchestrator│ │golang-structure │ │ Postgres │
+│ :3000  │ │  :8081     │ │     :8080       │ │  :5432   │
+└───┬────┘ └─────┬──────┘ └───────┬─────────┘ └──────────┘
+    │            │                │
+    │ X-Trace-Id │  X-Trace-Id   │
+    │ X-Source   │  X-Source     │
+    └──►─────────└──►─────────────┘
 ```
 
-**Request Flow:** Gateway → Orchestrator → golang-structure → PostgreSQL
+### Data Flow
 
-Each service outputs a **structured JSON log line** to stdout per request. Promtail scrapes Docker container logs and pushes them to Loki. Grafana queries Loki and correlates logs by `traceId`.
+| Signal | Path |
+|--------|------|
+| **Logs** | App stdout (JSON) → Alloy (Docker log scrape) → Loki → Grafana |
+| **Metrics** | App `/metrics` ← Prometheus (scrape) → Grafana |
+| **Traces** | Tempo (OTLP receiver, ready for future instrumentation) → Grafana |
+| **Trace Correlation** | `traceId` in Loki logs → derived fields → search across services |
 
 ## Project Structure
 
@@ -79,6 +84,7 @@ Each service outputs a **structured JSON log line** to stdout per request. Promt
 │   │   ├── sdk.go                          #     External SDK setup
 │   │   └── use_case.go                    #     Use case construction
 │   ├── middleware/
+│   │   ├── prometheus.go                   #   Prometheus metrics middleware
 │   │   ├── logger.go                       #   Structured JSON logging middleware
 │   │   └── cors.go                         #   CORS configuration
 │   ├── router/
@@ -97,6 +103,8 @@ Each service outputs a **structured JSON log line** to stdout per request. Promt
 │   │   ├── model.go                        #     Log, Block, DBLog structs
 │   │   ├── const.go                        #     Headers, response codes
 │   │   └── util.go                         #     DB log collector, masking helpers
+│   ├── promx/                              #   Prometheus metrics middleware
+│   │   └── promx.go                        #     HTTP metrics + /metrics endpoint
 │   ├── db/sqlx/                            #   GORM setup + custom SQL logger
 │   │   ├── sql.go                          #     Connection factory, query collector
 │   │   ├── model.go                        #     BaseEntity (id, timestamps)
@@ -112,13 +120,15 @@ Each service outputs a **structured JSON log line** to stdout per request. Promt
 │   ├── golang-structure/Dockerfile         #   Multi-stage Go build
 │   ├── loki/loki-config.yaml              #   Loki log storage config
 │   ├── tempo/tempo-config.yaml            #   Tempo trace storage config
-│   ├── promtail/promtail-config.yaml      #   Log scraping pipeline
+│   ├── prometheus/prometheus.yaml         #   Prometheus scrape config
+│   ├── alloy/config.alloy                 #   Grafana Alloy log collection pipeline
 │   └── grafana/
 │       ├── provisioning/
-│       │   ├── datasources/datasources.yaml  # Loki + Tempo auto-provisioned
+│       │   ├── datasources/datasources.yaml  # Loki + Prometheus + Tempo
 │       │   └── dashboards/dashboards.yaml    # Dashboard auto-discovery
 │       └── dashboards/
-│           └── golang-structure.json          # Pre-built dashboard
+│           ├── golang-structure.json          # Service dashboard (metrics + logs)
+│           └── centralized-logs.json          # Centralized log dashboard
 │
 ├── httptest/                               # REST client test files (.http)
 ├── docker-compose.yaml                     # Full stack definition
@@ -138,9 +148,10 @@ Each service outputs a **structured JSON log line** to stdout per request. Promt
 | Config | caarlos0/env + godotenv |
 | Validation | go-playground/validator v10 |
 | Password | bcrypt (golang.org/x/crypto) |
+| Metrics | Prometheus 3.3 + client_golang |
+| Telemetry Collector | Grafana Alloy 1.8 |
 | Log Storage | Grafana Loki 3.5 |
 | Trace Storage | Grafana Tempo 2.7 |
-| Log Agent | Promtail 3.5 |
 | Dashboard | Grafana 11.6 |
 | Database | PostgreSQL 18 |
 | Container | Docker Compose |
@@ -188,8 +199,10 @@ make gateway-run       # terminal 3
 | Gateway (demo) | http://localhost:3000 | - |
 | Orchestrator (demo) | http://localhost:8081 | - |
 | Grafana | http://localhost:3001 | admin / admin |
+| Prometheus | http://localhost:9090 | - |
 | Loki API | http://localhost:3100 | - |
 | Tempo API | http://localhost:3200 | - |
+| Alloy UI | http://localhost:12345 | - |
 
 ## API Endpoints
 
@@ -200,6 +213,7 @@ make gateway-run       # terminal 3
 | `POST` | `/api/v1/users/` | Create user |
 | `PUT` | `/api/v1/users/:user_id` | Update user |
 | `DELETE` | `/api/v1/users/:user_id` | Delete user |
+| `GET` | `/metrics` | Prometheus metrics endpoint |
 
 **Demo chain** (distributed tracing):
 
@@ -306,7 +320,7 @@ Every HTTP request produces a single JSON log line to stdout:
       }
     ],
     "request": {
-      "headers": { "Content-Type": "application/json", "..." : "..." },
+      "headers": { "Content-Type": "application/json" },
       "body": { "name": "test01", "email": "com@******com", "password": "1234**78" }
     },
     "response": {
@@ -376,140 +390,182 @@ MASK_PATTERN={"password":"4:2","email":"4:com"}
 - **Headers** — Header values matching pattern keys
 - **SQL queries** — Column values in `INSERT ... VALUES(...)` statements matching pattern keys
 
+## Prometheus Metrics
+
+The `pkg/promx` library provides a reusable Fiber middleware that exposes Prometheus metrics.
+
+### Usage
+
+```go
+// One line: registers /metrics endpoint + records HTTP metrics
+app.Use(middleware.Prometheus(app))
+```
+
+### Exposed Metrics
+
+| Metric | Type | Labels | Description |
+|--------|------|--------|-------------|
+| `http_requests_total` | Counter | `method`, `path`, `status_code`, `service` | Total HTTP request count |
+| `http_request_duration_seconds` | Histogram | `method`, `path`, `status_code`, `service` | Request latency (buckets: 5ms–10s) |
+| `http_requests_in_flight` | Gauge | `service` | Currently processing requests |
+
+### Go Runtime Metrics (auto-exposed)
+
+The `prometheus/client_golang` library automatically exposes Go runtime metrics at `/metrics`:
+
+| Metric | Description |
+|--------|-------------|
+| `go_goroutines` | Number of goroutines |
+| `go_threads` | Number of OS threads |
+| `go_memstats_heap_alloc_bytes` | Heap memory allocated |
+| `go_memstats_stack_inuse_bytes` | Stack memory in use |
+| `go_gc_duration_seconds` | GC pause duration |
+
 ## Observability Stack
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                        Docker Compose                            │
+│                                                                  │
+│  ┌─────────────┐  stdout  ┌──────────┐  push   ┌──────┐        │
+│  │ App Service  │ ───────► │  Alloy   │ ──────► │ Loki │        │
+│  │ (JSON logs)  │          │  :12345  │         └──┬───┘        │
+│  │              │          └──────────┘            │             │
+│  │  /metrics ◄──── Prometheus (:9090)              │ query       │
+│  │  (promx)     │          │                    ┌──▼─────┐      │
+│  └─────────────┘           │   ┌────────┐      │Grafana │      │
+│                            └──►│ TSDB   │─────►│ :3001  │      │
+│  ┌─────────────┐               └────────┘      └──▲─────┘      │
+│  │   Tempo     │ ◄────────────────────────────────┘ query       │
+│  │  (traces)   │                                                │
+│  └─────────────┘                                                │
+└──────────────────────────────────────────────────────────────────┘
+```
 
 ### Components
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                     Docker Compose                          │
-│                                                             │
-│  ┌─────────────┐    stdout    ┌──────────┐    push   ┌──────┐
-│  │ App Service  │ ──────────► │ Promtail │ ────────► │ Loki │
-│  │ (JSON logs)  │             └──────────┘           └──┬───┘
-│  └─────────────┘                                        │
-│                                                         │ query
-│  ┌─────────────┐                                     ┌──▼─────┐
-│  │   Tempo     │ ◄──────────────────────────────────►│Grafana │
-│  │ (traces)    │         query                       │ :3001  │
-│  └─────────────┘                                     └────────┘
-└─────────────────────────────────────────────────────────────┘
-```
-
 | Component | Role | Port |
 |-----------|------|------|
-| **Promtail** | Scrapes Docker container logs via Docker socket, parses JSON, extracts labels (`traceId`, `service`, `method`, `statusCode`, `code`), pushes to Loki | - |
-| **Loki** | Log aggregation and storage. Indexes logs by labels for fast querying via LogQL | 3100 |
-| **Tempo** | Distributed trace storage. Accepts OTLP gRPC/HTTP spans. Ready for future OTel instrumentation | 3200, 4317, 4318 |
-| **Grafana** | Visualization dashboard. Pre-configured datasources (Loki + Tempo) with `traceId` correlation derived fields | 3001 |
+| **Alloy** | Grafana's unified telemetry collector. Discovers Docker containers with label `logging=true`, scrapes stdout logs, parses JSON, extracts labels (`traceId`, `service`, `method`, `statusCode`, `code`), pushes to Loki. Built-in debug UI. | 12345 |
+| **Loki** | Log aggregation and storage. Indexes logs by labels for fast querying via LogQL. | 3100 |
+| **Prometheus** | Scrapes `/metrics` from Go app every 15s. Stores HTTP request metrics + Go runtime metrics. Query via PromQL. | 9090 |
+| **Tempo** | Distributed trace storage. Accepts OTLP gRPC/HTTP spans. Ready for future OTel instrumentation. | 3200, 4317, 4318 |
+| **Grafana** | Visualization. Pre-configured datasources (Loki + Prometheus + Tempo) with `traceId` correlation. | 3001 |
 
-### Promtail Pipeline
+### Alloy Pipeline
 
-Promtail is configured to:
-1. Discover Docker containers with label `logging=promtail`
-2. Parse JSON log lines from stdout
-3. Extract fields: `traceId`, `service`, `method`, `statusCode`, `code`
-4. Set extracted fields as Loki **labels** for fast filtering
-5. Parse `timestamp` from the log's RFC3339 timestamp field
+Grafana Alloy is configured with a River-based pipeline (`deployment/alloy/config.alloy`):
+
+1. **`discovery.docker`** — discover Docker containers with label `logging=true`
+2. **`discovery.relabel`** — extract container name, compose service, job name as labels
+3. **`loki.source.docker`** — tail container stdout/stderr logs
+4. **`loki.process`** — JSON pipeline: parse fields, promote to Loki labels, parse timestamp
+5. **`loki.write`** — push processed log entries to Loki
 
 ### Grafana Datasource Correlation
 
-Loki datasource is configured with **derived fields**:
-- Clicking `traceId` in a log → **"Search TraceID in Logs"** → searches all services for the same `traceId`
-- Clicking `traceId` in a log → **"View in Tempo"** → jumps to Tempo trace view (when OTLP spans are available)
+**Loki** — derived fields on `traceId`:
+- **"Search TraceID in Logs"** — searches all services for the same `traceId`
+- **"View in Tempo"** — jumps to Tempo trace view (when OTLP spans are available)
 
-Tempo datasource is configured with **traces-to-logs**:
-- Viewing a trace in Tempo → links back to Loki logs filtered by the same `traceId`
+**Tempo** — traces-to-logs:
+- Viewing a trace in Tempo → links back to Loki logs filtered by `traceId`
+
+**Tempo** — traces-to-metrics:
+- Links from Tempo to Prometheus metrics for the same service
 
 ## Monitoring Guide
 
-### 1. Pre-built Dashboard
+### Dashboards
 
-Navigate to **Grafana** (http://localhost:3001) → **Dashboards** → **Golang Structure** → **Golang Structure - Observability**
+Open **Grafana** at http://localhost:3001 → **Dashboards** → **Golang Structure**
 
-Dashboard panels:
-| Panel | Description |
-|-------|-------------|
-| Log Volume | Request count per service over time |
-| Total Requests | Total request count |
-| Error Requests (5xx) | Server error count |
-| Client Errors (4xx) | Client error count |
-| Avg Response Time | Average response duration (ms) |
-| Errors by Status Code | Error distribution by HTTP status |
-| Errors by Service | Error distribution by service |
-| Response Time by Service | Average latency per service |
-| P95 Response Time | 95th percentile latency per service |
-| DB Query Duration | Average database query time |
-| DB Errors | Database error count |
-| All Logs | Full log explorer with JSON parsing |
-| Error Logs Only | Filtered error log explorer |
+#### 1. Golang Structure - Service
 
-### 2. Log Exploration (Grafana Explore)
+Single-page view combining **metrics + logs** for the service:
 
-Go to **Explore** (compass icon) → Select **Loki** datasource
+| Section | Panels |
+|---------|--------|
+| **HTTP Metrics** | Request Rate, Error Rate (4xx+5xx), Duration (avg), Duration (p50/p90/p99), In-Flight, Total Requests, 5xx Errors, Avg Latency |
+| **Go Runtime** | Goroutines, Threads, Heap Alloc, Stack In Use, Goroutines Over Time, Memory Over Time, GC Pause Duration |
+| **Service Logs** | All Logs (golang-structure), Error Logs Only |
 
-#### View all logs
+#### 2. Centralized Logs
+
+Cross-service log aggregation with a **service dropdown filter**:
+
+| Section | Panels |
+|---------|--------|
+| **Overview** | Log Volume by Service (stacked bar), Total Requests, 5xx Errors, 4xx Errors, Avg Response Time |
+| **Error Analysis** | Errors by Status Code, Errors by Service |
+| **All Logs** | Logs from all selected services with JSON parsing |
+| **Error Logs** | Error logs only (4xx + 5xx) |
+
+### Explore (Manual Queries)
+
+Go to **Explore** (compass icon) → select datasource:
+
+#### Loki (LogQL)
+
 ```logql
+# All logs
 {compose_service=~".+"} | json
-```
 
-#### Filter by service
-```logql
+# Filter by service
 {compose_service="golang-structure"} | json
-```
 
-#### Filter errors only (5xx)
-```logql
+# Errors only (5xx)
 {compose_service=~".+", statusCode=~"5.."} | json
-```
 
-#### Filter client errors (4xx)
-```logql
-{compose_service=~".+", statusCode=~"4.."} | json
-```
+# Search by traceId (cross-service correlation)
+{compose_service=~".+"} |= "YOUR-TRACE-ID" | json
 
-#### Search by Trace ID (cross-service correlation)
-```logql
-{compose_service=~".+"} |= "YOUR-TRACE-ID-HERE" | json
-```
-
-This shows logs from **all services** in the request chain (gateway → orchestrator → main service) — the core of distributed tracing.
-
-#### Find slow requests (> 100ms)
-```logql
+# Slow requests (> 100ms)
 {compose_service=~".+"} | json | durationMs > 100
-```
 
-#### Find requests with DB errors
-```logql
+# DB errors
 {compose_service=~".+"} |= "dbLogs" |= "error" | json
 ```
 
-#### Filter by HTTP method
-```logql
-{compose_service=~".+", method="POST"} | json
+#### Prometheus (PromQL)
+
+```promql
+# Request rate by endpoint
+sum(rate(http_requests_total[5m])) by (method, path)
+
+# P99 latency
+histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))
+
+# Error rate percentage
+sum(rate(http_requests_total{status_code=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))
+
+# Goroutines
+go_goroutines{job="golang-structure"}
+
+# Heap memory
+go_memstats_heap_alloc_bytes{job="golang-structure"}
 ```
 
-### 3. Trace ID Correlation Workflow
+### Trace ID Correlation Workflow
 
-1. Find a log entry in Grafana Explore
+1. Find a log entry in Grafana Explore or the Centralized Logs dashboard
 2. Expand the log line details
 3. Find the `traceId` field
 4. Click **"Search TraceID in Logs"** → see all related logs across services
 5. Trace the full request path: Gateway → Orchestrator → Main Service → DB
 
-### 4. Distributed Trace Example
+### Example
 
-Send a request through the gateway:
 ```bash
 curl -X POST http://localhost:3000/register \
   -H "Content-Type: application/json" \
   -d '{"name":"test","age":25,"email":"test@example.com","password":"12345678","confirm_password":"12345678"}'
 ```
 
-Then in Grafana Explore, search for the `traceId` from the response header:
+Then in Grafana Explore:
+
 ```logql
-{compose_service=~".+"} |= "<traceId-from-response>" | json
+{compose_service=~".+"} |= "<traceId-from-response-header>" | json
 ```
 
 You will see **3 log entries** — one from each service — all correlated by the same `traceId`, with the `source` field showing the nested call chain.
@@ -518,7 +574,7 @@ You will see **3 log entries** — one from each service — all correlated by t
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `SERVICE_NAME` | `golang-structure` | Service name in logs |
+| `SERVICE_NAME` | `golang-structure` | Service name in logs and metrics |
 | `SERVICE_PORT` | `8080` | HTTP listen port |
 | `SERVICE_STAGE` | `dev` | Deployment stage |
 | `MASK_PATTERN` | `{}` | JSON masking rules |

@@ -6,6 +6,7 @@ import (
 )
 
 func newMiddleware(app *fiber.App) {
+	app.Use(middleware.Prometheus(app))
 	app.Use(middleware.Logger())
 	app.Use(middleware.Cors())
 }

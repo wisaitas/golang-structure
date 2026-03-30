@@ -21,6 +21,16 @@ datasources:
           url: '/explore?left=["now-1h","now","Loki",{"expr":"{compose_service=~\".+\"} |= \"$${__value.raw}\""}]'
           urlDisplayLabel: "Search TraceID in Logs"
 
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    editable: true
+    jsonData:
+      httpMethod: POST
+      timeInterval: "15s"
+
   - name: Tempo
     type: tempo
     uid: tempo
@@ -33,6 +43,8 @@ datasources:
         filterByTraceID: false
         customQuery: true
         query: '{compose_service=~".+"} |= "$${__trace.traceId}"'
+      tracesToMetrics:
+        datasourceUid: prometheus
       nodeGraph:
         enabled: true
       lokiSearch:

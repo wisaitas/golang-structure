@@ -1,0 +1,99 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 }, "id": 100, "title": "Overview", "type": "row" },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "bars", "fillOpacity": 50, "stacking": { "group": "A", "mode": "normal" }, "lineWidth": 1 } } },
+      "gridPos": { "h": 6, "w": 24, "x": 0, "y": 1 }, "id": 1,
+      "title": "Log Volume by Service", "type": "timeseries",
+      "options": { "legend": { "calcs": [], "displayMode": "list", "placement": "bottom" }, "tooltip": { "mode": "multi", "sort": "none" } },
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "sum by (compose_service) (count_over_time({compose_service=~\"$service\"} [$__auto]))", "legendFormat": "{{compose_service}}", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 7 }, "id": 2,
+      "title": "Total Requests", "type": "stat",
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "sum(count_over_time({compose_service=~\"$service\"} | json | __error__=`` [$__auto]))", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "red", "value": 1 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 7 }, "id": 3,
+      "title": "5xx Errors", "type": "stat",
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "sum(count_over_time({compose_service=~\"$service\"} | json | current_statusCode=~\"5..\" | __error__=`` [$__auto]))", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 1 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 7 }, "id": 4,
+      "title": "4xx Errors", "type": "stat",
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "sum(count_over_time({compose_service=~\"$service\"} | json | current_statusCode=~\"4..\" | __error__=`` [$__auto]))", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "thresholds" }, "unit": "ms", "thresholds": { "mode": "absolute", "steps": [{ "color": "green", "value": null }, { "color": "yellow", "value": 500 }, { "color": "red", "value": 1000 }] } } },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 7 }, "id": 5,
+      "title": "Avg Response Time", "type": "stat",
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "avg_over_time({compose_service=~\"$service\"} | json | unwrap durationMs | __error__=`` [$__auto])", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 11 }, "id": 101, "title": "Error Analysis", "type": "row" },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "group": "A", "mode": "normal" } } } },
+      "gridPos": { "h": 7, "w": 12, "x": 0, "y": 12 }, "id": 6,
+      "title": "Errors by Status Code", "type": "timeseries",
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "sum by (statusCode) (count_over_time({compose_service=~\"$service\", statusCode=~\"[45]..\"} [$__auto]))", "legendFormat": "HTTP {{statusCode}}", "refId": "A" }]
+    },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "group": "A", "mode": "normal" } } } },
+      "gridPos": { "h": 7, "w": 12, "x": 12, "y": 12 }, "id": 7,
+      "title": "Errors by Service", "type": "timeseries",
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "sum by (compose_service) (count_over_time({compose_service=~\"$service\", statusCode=~\"[45]..\"} [$__auto]))", "legendFormat": "{{compose_service}}", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 19 }, "id": 102, "title": "All Logs (All Services)", "type": "row" },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 20 }, "id": 8,
+      "title": "All Logs", "type": "logs",
+      "options": { "showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "{compose_service=~\"$service\"} | json", "refId": "A" }]
+    },
+
+    { "collapsed": false, "gridPos": { "h": 1, "w": 24, "x": 0, "y": 34 }, "id": 103, "title": "Error Logs Only", "type": "row" },
+    {
+      "datasource": { "type": "loki", "uid": "" },
+      "gridPos": { "h": 14, "w": 24, "x": 0, "y": 35 }, "id": 9,
+      "title": "Error Logs", "type": "logs",
+      "options": { "showTime": true, "showLabels": true, "showCommonLabels": false, "wrapLogMessage": true, "prettifyLogMessage": true, "enableLogDetails": true, "dedupStrategy": "none", "sortOrder": "Descending" },
+      "targets": [{ "datasource": { "type": "loki", "uid": "" }, "expr": "{compose_service=~\"$service\", statusCode=~\"[45]..\"} | json", "refId": "A" }]
+    }
+  ],
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "tags": ["logs", "centralized", "loki"],
+  "templating": {
+    "list": [
+      {
+        "current": { "selected": true, "text": "All", "value": "$__all" },
+        "datasource": { "type": "loki", "uid": "" },
+        "definition": "label_values(compose_service)",
+        "includeAll": true, "multi": true,
+        "name": "service",
+        "query": "label_values(compose_service)",
+        "refresh": 2, "type": "query"
+      }
+    ]
+  },
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "title": "Centralized Logs",
+  "uid": "centralized-logs-dashboard",
+  "version": 1
+}

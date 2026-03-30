@@ -25,13 +25,13 @@ logs:
 
 # ── Docker: Infrastructure Only (DB + Observability) ────────────────────
 infra-up:
-	docker compose up -d postgres loki tempo promtail grafana
+	docker compose up -d postgres loki tempo alloy prometheus grafana
 
 infra-down:
-	docker compose down loki tempo promtail grafana
+	docker compose down loki tempo alloy prometheus grafana
 
 infra-logs:
-	docker compose logs -f loki tempo promtail grafana
+	docker compose logs -f loki tempo alloy prometheus grafana
 
 # ── Docker: App Services Only ──────────────────────────────────────────
 app-up:

@@ -24,7 +24,7 @@ services:
       SQLDB_CONN_MAX_LIFETIME: 1h
       SQLDB_DRIVER: postgres
     labels:
-      logging: "promtail"
+      logging: "true"
       logging_jobname: "golang-structure"
     depends_on:
       postgres:
@@ -74,13 +74,30 @@ services:
     networks:
       - app-network
 
-  promtail:
-    image: grafana/promtail:3.5.0
-    container_name: promtail
+  prometheus:
+    image: prom/prometheus:v3.3.0
+    container_name: prometheus
+    ports:
+      - 9090:9090
     volumes:
-      - ./deployment/promtail/promtail-config.yaml:/etc/promtail/config.yaml
+      - ./deployment/prometheus/prometheus.yaml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-remote-write-receiver"
+    networks:
+      - app-network
+
+  alloy:
+    image: grafana/alloy:v1.8.3
+    container_name: alloy
+    ports:
+      - 12345:12345   # Alloy UI
+    volumes:
+      - ./deployment/alloy/config.alloy:/etc/alloy/config.alloy
       - /var/run/docker.sock:/var/run/docker.sock:ro
-    command: -config.file=/etc/promtail/config.yaml
+    command: ["run", "/etc/alloy/config.alloy", "--server.http.listen-addr=0.0.0.0:12345"]
     depends_on:
       - loki
     networks:
@@ -105,6 +122,7 @@ services:
     depends_on:
       - loki
       - tempo
+      - prometheus
     networks:
       - app-network
 
@@ -112,6 +130,7 @@ volumes:
   postgres-data:
   loki-data:
   tempo-data:
+  prometheus-data:
   grafana-data:
 
 networks:

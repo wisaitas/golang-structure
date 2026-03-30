@@ -49,9 +49,24 @@ func NewSQLDB(config Config) (*gorm.DB, error) {
 		logLevel: logger.Warn,
 	}
 
-	db, err := gorm.Open(dialector, &gcfg)
+	const maxRetries = 3
+	retryIntervals := [maxRetries]time.Duration{2 * time.Second, 5 * time.Second, 10 * time.Second}
+
+	var db *gorm.DB
+	var err error
+	for attempt := range maxRetries {
+		db, err = gorm.Open(dialector, &gcfg)
+		if err == nil {
+			break
+		}
+		log.Printf("[sqlx] failed to connect (attempt %d/%d): %v", attempt+1, maxRetries, err)
+		if attempt < maxRetries-1 {
+			log.Printf("[sqlx] retrying in %v...", retryIntervals[attempt])
+			time.Sleep(retryIntervals[attempt])
+		}
+	}
 	if err != nil {
-		return nil, fmt.Errorf("[sqlx] failed to open postgres connection: %w", err)
+		return nil, fmt.Errorf("[sqlx] failed to open connection after %d attempts: %w", maxRetries, err)
 	}
 
 	sqlDB, err := db.DB()
