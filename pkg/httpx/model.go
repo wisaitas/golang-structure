@@ -54,7 +54,7 @@ type Block struct {
 
 type Body struct {
 	Headers map[string]string `json:"headers"`
-	Body    map[string]any    `json:"body,omitempty"`
+	Body    any               `json:"body,omitempty"`
 }
 
 type LoggerConfig struct {

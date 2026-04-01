@@ -143,14 +143,12 @@ func (v *validator) validateStructRecursive(rf reflect.Value, parentPath string)
 	return nil
 }
 
+var timeType = reflect.TypeOf(time.Time{})
+
 func shouldSkipType(t reflect.Type) bool {
 	if t.Kind() == reflect.Ptr {
 		t = t.Elem()
 	}
 
-	if t == reflect.TypeOf(time.Time{}) {
-		return true
-	}
-
-	return false
+	return t == timeType
 }

@@ -39,16 +39,7 @@ func wrapError(op string, err error, statusCode int, code ResponseCode) error {
 	if err == nil {
 		return nil
 	}
-	function, file, line, ok := callerOutsideHttpx()
-	if !ok {
-		var pc uintptr
-		pc, file, line, ok = runtime.Caller(3)
-		if ok {
-			if fn := runtime.FuncForPC(pc); fn != nil {
-				function = fn.Name()
-			}
-		}
-	}
+	function, file, line, _ := callerOutsideHttpx()
 
 	return &WrappedError{
 		Op:         op,
@@ -62,26 +53,21 @@ func wrapError(op string, err error, statusCode int, code ResponseCode) error {
 }
 
 func callerOutsideHttpx() (function, file string, line int, ok bool) {
-	const depth = 32
-	var pcs [depth]uintptr
-	n := runtime.Callers(2, pcs[:])
-	frames := runtime.CallersFrames(pcs[:n])
-	for {
-		fr, more := frames.Next()
-		if fr.PC == 0 {
+	// skip: callerOutsideHttpx(0) → wrapError(1) → WrapError/WrapErrorWithCode(2) → actual caller(3+)
+	for skip := 3; skip < 8; skip++ {
+		pc, f, l, found := runtime.Caller(skip)
+		if !found {
 			return "", "", 0, false
 		}
-		if isHttpxSourceFile(fr.File) {
-			if !more {
-				return "", "", 0, false
-			}
+		if isHttpxSourceFile(f) {
 			continue
 		}
-		if fn := runtime.FuncForPC(fr.PC); fn != nil {
-			return fn.Name(), fr.File, fr.Line, true
+		if fn := runtime.FuncForPC(pc); fn != nil {
+			return fn.Name(), f, l, true
 		}
-		return "", fr.File, fr.Line, true
+		return "", f, l, true
 	}
+	return "", "", 0, false
 }
 
 func isHttpxSourceFile(file string) bool {

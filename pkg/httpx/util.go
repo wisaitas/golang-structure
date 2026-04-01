@@ -26,7 +26,7 @@ func TryParseJSON(b []byte) map[string]any {
 		return nil
 	}
 	var m map[string]any
-	if json.Valid(b) && json.Unmarshal(b, &m) == nil {
+	if json.Unmarshal(b, &m) == nil {
 		return m
 	}
 	return nil
@@ -82,30 +82,24 @@ func convertMultipartHeader(header map[string][]string) map[string]any {
 }
 
 func MaskData(data map[string]any, maskMap map[string]string) map[string]any {
-	if data == nil || maskMap == nil || len(maskMap) == 0 {
+	if data == nil || len(maskMap) == 0 {
 		return data
 	}
 
-	result := make(map[string]any)
+	result := make(map[string]any, len(data))
 	for k, v := range data {
-		masked := false
-		for maskKey, maskValue := range maskMap {
-			if strings.EqualFold(k, maskKey) {
-				result[k] = maskFieldValue(v, maskValue)
-				masked = true
-				break
-			}
+		if pattern, ok := maskMap[strings.ToLower(k)]; ok {
+			result[k] = maskFieldValue(v, pattern)
+			continue
 		}
 
-		if !masked {
-			switch val := v.(type) {
-			case map[string]any:
-				result[k] = MaskData(val, maskMap)
-			case []any:
-				result[k] = maskSlice(val, maskMap)
-			default:
-				result[k] = v
-			}
+		switch val := v.(type) {
+		case map[string]any:
+			result[k] = MaskData(val, maskMap)
+		case []any:
+			result[k] = maskSlice(val, maskMap)
+		default:
+			result[k] = v
 		}
 	}
 
@@ -163,21 +157,15 @@ func maskSlice(slice []any, maskMap map[string]string) []any {
 }
 
 func MaskHeaders(headers map[string]string, maskMap map[string]string) map[string]string {
-	if headers == nil || maskMap == nil || len(maskMap) == 0 {
+	if headers == nil || len(maskMap) == 0 {
 		return headers
 	}
 
-	result := make(map[string]string)
+	result := make(map[string]string, len(headers))
 	for k, v := range headers {
-		masked := false
-		for maskKey, maskValue := range maskMap {
-			if strings.EqualFold(k, maskKey) {
-				result[k] = mask.MaskPlainString(v, maskValue)
-				masked = true
-				break
-			}
-		}
-		if !masked {
+		if pattern, ok := maskMap[strings.ToLower(k)]; ok {
+			result[k] = mask.MaskPlainString(v, pattern)
+		} else {
 			result[k] = v
 		}
 	}
@@ -195,15 +183,9 @@ func MaskQueryParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 		keyStr := string(key)
 		valueStr := string(value)
 
-		masked := false
-		for maskKey, maskValue := range maskMap {
-			if strings.EqualFold(keyStr, maskKey) {
-				result[keyStr] = mask.MaskPlainString(valueStr, maskValue)
-				masked = true
-				break
-			}
-		}
-		if !masked {
+		if pattern, ok := maskMap[strings.ToLower(keyStr)]; ok {
+			result[keyStr] = mask.MaskPlainString(valueStr, pattern)
+		} else {
 			result[keyStr] = valueStr
 		}
 	}
@@ -220,20 +202,39 @@ func MaskParams(c fiber.Ctx, maskMap map[string]string) map[string]string {
 	for _, paramName := range c.Route().Params {
 		paramValue := c.Params(paramName)
 
-		masked := false
-		for maskKey, maskValue := range maskMap {
-			if strings.EqualFold(paramName, maskKey) {
-				result[paramName] = mask.MaskPlainString(paramValue, maskValue)
-				masked = true
-				break
-			}
-		}
-		if !masked {
+		if pattern, ok := maskMap[strings.ToLower(paramName)]; ok {
+			result[paramName] = mask.MaskPlainString(paramValue, pattern)
+		} else {
 			result[paramName] = paramValue
 		}
 	}
 
 	return result
+}
+
+func NormalizeMaskMap(m map[string]string) map[string]string {
+	if m == nil {
+		return nil
+	}
+	normalized := make(map[string]string, len(m))
+	for k, v := range m {
+		normalized[strings.ToLower(k)] = v
+	}
+	return normalized
+}
+
+func clampedRawJSON(b []byte, limit int) json.RawMessage {
+	if len(b) == 0 {
+		return nil
+	}
+	if len(b) > limit {
+		b = b[:limit]
+	}
+	var raw json.RawMessage
+	if json.Unmarshal(b, &raw) != nil {
+		return nil
+	}
+	return raw
 }
 
 func RequestContext(c fiber.Ctx) context.Context {

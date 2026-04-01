@@ -13,6 +13,7 @@ import (
 )
 
 func NewLogger(config LoggerConfig) fiber.Handler {
+	maskMap := NormalizeMaskMap(mask.ParsePatternMap(config.MaskMapPattern))
 	return func(c fiber.Ctx) error {
 		traceID := c.Get(HeaderTraceID)
 		if traceID == "" {
@@ -22,7 +23,7 @@ func NewLogger(config LoggerConfig) fiber.Handler {
 		c.Request().Header.Set(HeaderTraceID, traceID)
 		c.Set(HeaderTraceID, traceID)
 
-		return HandleJSON(c, config.ServiceName, config.MaskMapPattern)
+		return HandleJSON(c, config.ServiceName, maskMap)
 	}
 }
 
@@ -89,23 +90,27 @@ func orgCodeFromResponseBody(body map[string]any) string {
 	}
 }
 
-func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
+func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) error {
 	start := time.Now()
-	maskMap := mask.ParsePatternMap(maskMapPattern)
 	requestContext := WithDBLogCollector(c.Context())
 	c.Locals("requestContext", requestContext)
 
-	var payload map[string]any
+	hasMask := len(maskMap) > 0
+
+	var requestBody any
 	contentType := string(c.Request().Header.ContentType())
 
 	if len(contentType) >= 19 && contentType[:19] == "multipart/form-data" {
-		payload = ReadMultipartForm(c, 64<<10)
+		payload := ReadMultipartForm(c, 64<<10)
+		if hasMask {
+			payload = MaskData(payload, maskMap)
+		}
+		requestBody = payload
+	} else if hasMask {
+		payload := ReadJSONMapLimited(c.Body(), 64<<10)
+		requestBody = MaskData(payload, maskMap)
 	} else {
-		payload = ReadJSONMapLimited(c.Body(), 64<<10)
-	}
-
-	if len(maskMap) > 0 {
-		payload = MaskData(payload, maskMap)
+		requestBody = clampedRawJSON(c.Body(), 64<<10)
 	}
 
 	requestHeaders := make(map[string]string)
@@ -115,7 +120,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		}
 	}
 
-	if len(maskMap) > 0 {
+	if hasMask {
 		requestHeaders = MaskHeaders(requestHeaders, maskMap)
 	}
 
@@ -125,9 +130,19 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 
 	responseBody := c.Response().Body()
 	responsePayload := ReadJSONMapLimited(responseBody, 64<<10)
+	orgCode := orgCodeFromResponseBody(responsePayload)
 
-	if len(maskMap) > 0 {
-		responsePayload = MaskData(responsePayload, maskMap)
+	var responseLogBody any
+	if hasMask {
+		responseLogBody = MaskData(responsePayload, maskMap)
+	} else if responsePayload != nil {
+		limited := responseBody
+		if len(limited) > 64<<10 {
+			limited = limited[:64<<10]
+		}
+		copied := make([]byte, len(limited))
+		copy(copied, limited)
+		responseLogBody = json.RawMessage(copied)
 	}
 
 	responseHeaders := make(map[string]string)
@@ -137,7 +152,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		}
 	}
 
-	if len(maskMap) > 0 {
+	if hasMask {
 		responseHeaders = MaskHeaders(responseHeaders, maskMap)
 	}
 
@@ -150,8 +165,6 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		errorContext = &errorContextLocal
 	}
 
-	orgCode := orgCodeFromResponseBody(responsePayload)
-
 	var errMsgPtr *string
 	if errorContext.ErrorMessage != "" {
 		errMsgPtr = &errorContext.ErrorMessage
@@ -163,8 +176,8 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		Path:         c.Hostname() + string(c.Request().URI().RequestURI()),
 		StatusCode:   strconv.Itoa(c.Response().StatusCode()),
 		Code:         orgCode,
-		Request:      &Body{Headers: requestHeaders, Body: payload},
-		Response:     &Body{Headers: responseHeaders, Body: responsePayload},
+		Request:      &Body{Headers: requestHeaders, Body: requestBody},
+		Response:     &Body{Headers: responseHeaders, Body: responseLogBody},
 		ErrorMessage: errMsgPtr,
 		StackTraces:  errorContext.StackTraces,
 		DBLogs:       GetDBLogs(requestContext),
@@ -177,35 +190,25 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		Current:    current,
 	}
 
-	if string(c.Response().Header.Peek(HeaderSource)) != "" {
+	sourceHeader := c.Response().Header.Peek(HeaderSource)
+
+	if len(sourceHeader) > 0 {
 		source := new(Block)
-		if err := json.Unmarshal(c.Response().Header.Peek(HeaderSource), source); err != nil {
+		if err := json.Unmarshal(sourceHeader, source); err != nil {
 			log.Printf("[httpx] : %s", err.Error())
 		}
-
 		logInfo.Source = source
-	} else if string(c.Response().Header.Peek(HeaderSource)) == "" {
-		source := &Block{
-			Service:      serviceName,
-			Method:       c.Method(),
-			Path:         c.Hostname() + string(c.Request().URI().RequestURI()),
-			StatusCode:   strconv.Itoa(c.Response().StatusCode()),
-			Code:         orgCode,
-			ErrorMessage: errMsgPtr,
-			StackTraces:  errorContext.StackTraces,
-			DBLogs:       GetDBLogs(requestContext),
-			Request:      &Body{Headers: requestHeaders, Body: payload},
-			Response:     &Body{Headers: responseHeaders, Body: responsePayload},
-		}
-
-		jsonResp, err := json.Marshal(source)
-		if err != nil {
-			log.Printf("[httpx] : %s", err.Error())
-		}
-		c.Response().Header.Set(HeaderSource, string(jsonResp))
 	}
 
-	if c.Get(HeaderInternal) != "true" {
+	if c.Get(HeaderInternal) == "true" {
+		if len(sourceHeader) == 0 {
+			jsonResp, err := json.Marshal(current)
+			if err != nil {
+				log.Printf("[httpx] : %s", err.Error())
+			}
+			c.Response().Header.Set(HeaderSource, string(jsonResp))
+		}
+	} else {
 		c.Response().Header.Del(HeaderSource)
 	}
 
