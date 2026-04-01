@@ -15,7 +15,7 @@ gateway-run:
 
 # ── Docker: Full Stack ──────────────────────────────────────────────────
 up:
-	docker compose up -d --build
+	docker compose up -d
 
 down:
 	docker compose down

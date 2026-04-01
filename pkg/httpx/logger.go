@@ -152,6 +152,11 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 
 	orgCode := orgCodeFromResponseBody(responsePayload)
 
+	var errMsgPtr *string
+	if errorContext.ErrorMessage != "" {
+		errMsgPtr = &errorContext.ErrorMessage
+	}
+
 	current := &Block{
 		Service:      serviceName,
 		Method:       c.Method(),
@@ -160,7 +165,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 		Code:         orgCode,
 		Request:      &Body{Headers: requestHeaders, Body: payload},
 		Response:     &Body{Headers: responseHeaders, Body: responsePayload},
-		ErrorMessage: &errorContext.ErrorMessage,
+		ErrorMessage: errMsgPtr,
 		StackTraces:  errorContext.StackTraces,
 		DBLogs:       GetDBLogs(requestContext),
 	}
@@ -186,7 +191,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMapPattern string) error {
 			Path:         c.Hostname() + string(c.Request().URI().RequestURI()),
 			StatusCode:   strconv.Itoa(c.Response().StatusCode()),
 			Code:         orgCode,
-			ErrorMessage: &errorContext.ErrorMessage,
+			ErrorMessage: errMsgPtr,
 			StackTraces:  errorContext.StackTraces,
 			DBLogs:       GetDBLogs(requestContext),
 			Request:      &Body{Headers: requestHeaders, Body: payload},

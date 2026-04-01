@@ -20,3 +20,4 @@ func newConfig() *config {
 		sqlDB: sqlDB,
 	}
 }
+

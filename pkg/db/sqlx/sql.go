@@ -159,3 +159,11 @@ func normalizeSourcePath(source string) string {
 	}
 	return source[idx+1:]
 }
+
+func Ping(db *gorm.DB) error {
+	sqlDB, err := db.DB()
+	if err != nil {
+		return fmt.Errorf("[sqlx] failed to ping db: %w", err)
+	}
+	return sqlDB.Ping()
+}

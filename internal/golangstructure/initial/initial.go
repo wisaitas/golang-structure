@@ -33,7 +33,6 @@ type App struct {
 }
 
 func New() *App {
-	fmt.Println(golangstructure.Config)
 	config := newConfig()
 	sdk := newSDK()
 	repository := newRepository(config)
@@ -41,7 +40,7 @@ func New() *App {
 	app := fiber.New(fiber.Config{
 		AppName: golangstructure.Config.Service.Name,
 	})
-	newMiddleware(app)
+	newMiddleware(app, config)
 
 	newRouter(app, useCase)
 

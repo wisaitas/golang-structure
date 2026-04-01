@@ -52,8 +52,9 @@ const (
 	CodeConflict     ResponseCode = "E40900"
 
 	// 5xx
-	CodeInternal   ResponseCode = "E50000"
-	CodeBadGateway ResponseCode = "E50200"
+	CodeInternal           ResponseCode = "E50000"
+	CodeBadGateway         ResponseCode = "E50200"
+	CodeServiceUnavailable ResponseCode = "E50300"
 )
 
 func CodeForHTTPStatus(statusCode int) ResponseCode {
