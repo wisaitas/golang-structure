@@ -15,6 +15,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 - [Structured JSON Log Format](#structured-json-log-format)
 - [Data Masking](#data-masking)
 - [Prometheus Metrics](#prometheus-metrics)
+- [Database Migration](#database-migration)
 - [Observability Stack](#observability-stack)
 - [Monitoring Guide](#monitoring-guide)
 - [Environment Variables](#environment-variables)
@@ -45,7 +46,12 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 ┌────────┐ ┌────────────┐ ┌─────────────────┐ ┌──────────┐
 │Gateway │ │Orchestrator│ │golang-structure │ │ Postgres │
 │ :3000  │ │  :8081     │ │     :8080       │ │  :5432   │
-└───┬────┘ └─────┬──────┘ └───────┬─────────┘ └──────────┘
+└───┬────┘ └─────┬──────┘ └───────┬─────────┘ └────▲─────┘
+    │            │                │                 │
+    │            │                │          ┌──────┴──────┐
+    │            │                │          │atlas-migrate│
+    │            │                │          │ (schema)    │
+    │            │                │          └─────────────┘
     │            │                │
     │ X-Trace-Id │  X-Trace-Id    │
     │ X-Source   │  X-Source      │
@@ -84,6 +90,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │   │   ├── sdk.go                          #     External SDK setup
 │   │   └── use_case.go                     #     Use case construction
 │   ├── middleware/
+│   │   ├── healthz.go                      #   Liveness & readiness probes
 │   │   ├── prometheus.go                   #   Prometheus metrics middleware
 │   │   ├── logger.go                       #   Structured JSON logging middleware
 │   │   └── cors.go                         #   CORS configuration
@@ -91,9 +98,15 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │   │   ├── auth.go                         #   /api/v1/auth routes
 │   │   └── user.go                         #   /api/v1/users routes
 │   └── usecase/                            #   Feature-based use cases
-│       ├── auth/register/                  #     POST /auth/register
-│       └── user/{createuser,getusers,      #     CRUD /users
-│                 updateuser,deleteuser}/
+│       ├── auth/
+│       │   ├── use_case.go                 #     Auth use case aggregate
+│       │   └── register/                   #     POST /auth/register
+│       └── user/
+│           ├── use_case.go                 #     User use case aggregate
+│           ├── createuser/                 #     POST /users
+│           ├── getusers/                   #     GET /users
+│           ├── updateuser/                 #     PUT /users/:user_id
+│           └── deleteuser/                 #     DELETE /users/:user_id
 │
 ├── pkg/                                    # Reusable shared libraries
 │   ├── httpx/                              #   HTTP utilities
@@ -118,6 +131,10 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │
 ├── deployment/                             # Infrastructure configs
 │   ├── golang-structure/Dockerfile         #   Multi-stage Go build
+│   ├── atlas/                              #   Database migration (Atlas)
+│   │   ├── atlas.hcl                       #     Atlas project config
+│   │   └── migrations/                     #     SQL migration files
+│   │       └── 20260401000001_create_tbl_users.sql
 │   ├── loki/loki-config.yaml               #   Loki log storage config
 │   ├── tempo/tempo-config.yaml             #   Tempo trace storage config
 │   ├── prometheus/prometheus.yaml          #   Prometheus scrape config
@@ -148,6 +165,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 | Config | caarlos0/env + godotenv |
 | Validation | go-playground/validator v10 |
 | Password | bcrypt (golang.org/x/crypto) |
+| DB Migration | Atlas (arigaio/atlas) |
 | Metrics | Prometheus 3.3 + client_golang |
 | Telemetry Collector | Grafana Alloy 1.8 |
 | Log Storage | Grafana Loki 3.5 |
@@ -206,14 +224,16 @@ make gateway-run       # terminal 3
 
 ## API Endpoints
 
-| Method   | Path                     | Description                 |
-|----------|--------------------------|-----------------------------|
-| `POST`   | `/api/v1/auth/register`  | Register a new user         |
-| `GET`    | `/api/v1/users/`         | List users                  |
-| `POST`   | `/api/v1/users/`         | Create user                 |
-| `PUT`    | `/api/v1/users/:user_id` | Update user                 |
-| `DELETE` | `/api/v1/users/:user_id` | Delete user                 |
-| `GET`    | `/metrics`               | Prometheus metrics endpoint |
+| Method   | Path                     | Description                          |
+|----------|--------------------------|--------------------------------------|
+| `GET`    | `/livez`                 | Liveness probe (always 200)          |
+| `GET`    | `/readyz`                | Readiness probe (DB ping)            |
+| `POST`   | `/api/v1/auth/register`  | Register a new user                  |
+| `GET`    | `/api/v1/users/`         | List users                           |
+| `POST`   | `/api/v1/users/`         | Create user                          |
+| `PUT`    | `/api/v1/users/:user_id` | Update user                          |
+| `DELETE` | `/api/v1/users/:user_id` | Delete user                          |
+| `GET`    | `/metrics`               | Prometheus metrics endpoint          |
 
 **Demo chain** (distributed tracing):
 
@@ -421,6 +441,36 @@ The `prometheus/client_golang` library automatically exposes Go runtime metrics 
 | `go_memstats_stack_inuse_bytes` | Stack memory in use   |
 | `go_gc_duration_seconds`        | GC pause duration     |
 
+## Database Migration
+
+Schema changes are managed by [Atlas](https://atlasgo.io/) and applied automatically via the `atlas-migrate` Docker service before the application starts.
+
+### Migration Files
+
+```
+deployment/atlas/
+├── atlas.hcl                                    # Atlas project config
+└── migrations/
+    ├── 20260401000001_create_tbl_users.sql      # Initial schema
+    └── atlas.sum                                # Checksum integrity file
+```
+
+### How It Works
+
+1. `docker compose up` starts **postgres** first (with health check)
+2. Once Postgres is healthy, **atlas-migrate** runs `atlas migrate apply` against the database
+3. Once migrations succeed, **golang-structure** starts (via `depends_on: condition: service_completed_successfully`)
+
+### Adding New Migrations
+
+```bash
+# Create a new migration file
+atlas migrate new <migration_name> --dir "file://deployment/atlas/migrations"
+
+# Write your SQL in the generated file, then update the checksum
+atlas migrate hash --dir "file://deployment/atlas/migrations"
+```
+
 ## Observability Stack
 
 ```
@@ -440,7 +490,7 @@ The `prometheus/client_golang` library automatically exposes Go runtime metrics 
 │  │  (traces)   │                                                 │ 
 │  └─────────────┘                                                 │ 
 └──────────────────────────────────────────────────────────────────┘
-` ``
+```
 
 ### Components
 
@@ -576,7 +626,6 @@ You will see **3 log entries** — one from each service — all correlated by t
 |---------------------------|--------------------|---------------------------------------------|
 | `SERVICE_NAME`            | `golang-structure` | Service name in logs and metrics            |
 | `SERVICE_PORT`            | `8080`             | HTTP listen port                            |
-| `SERVICE_STAGE`           | `dev`              | Deployment stage                            |
 | `MASK_PATTERN`            | `{}`               | JSON masking rules                          |
 | `SQLDB_HOST`              | -                  | Database host                               |
 | `SQLDB_PORT`              | -                  | Database port                               |
@@ -592,17 +641,17 @@ You will see **3 log entries** — one from each service — all correlated by t
 
 ## Makefile Commands
 
-| Command                | Description                             |
-|------------------------|-----------------------------------------|
-| `make run`             | Run main API locally                    |
-| `make gateway-run`     | Run gateway demo locally                |
-| `make orchestrate-run` | Run orchestrator demo locally           |
-| `make up`              | Docker: start full stack (build + up)   |
-| `make down`            | Docker: stop full stack                 |
-| `make logs`            | Docker: follow all logs                 |
-| `make infra-up`        | Docker: start DB + observability only   |
-| `make infra-down`      | Docker: stop observability stack        |
-| `make infra-logs`      | Docker: follow observability logs       |
-| `make app-up`          | Docker: build & start app services only |
-| `make app-down`        | Docker: stop app services               |
-| `make app-logs`        | Docker: follow app service logs         |
+| Command                | Description                                                          |
+|------------------------|----------------------------------------------------------------------|
+| `make run`             | Run main API locally                                                 |
+| `make gateway-run`     | Run gateway demo locally                                             |
+| `make orchestrate-run` | Run orchestrator demo locally                                        |
+| `make up`              | Docker: start full stack (`docker compose up -d`)                    |
+| `make down`            | Docker: stop full stack                                              |
+| `make logs`            | Docker: follow all logs                                              |
+| `make infra-up`        | Docker: start DB + observability only                                |
+| `make infra-down`      | Docker: stop observability stack (keeps Postgres running)            |
+| `make infra-logs`      | Docker: follow observability logs                                    |
+| `make app-up`          | Docker: build & start app services (app + gateway + orchestrator)    |
+| `make app-down`        | Docker: stop app services                                            |
+| `make app-logs`        | Docker: follow app service logs                                      |
