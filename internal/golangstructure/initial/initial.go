@@ -1,11 +1,13 @@
 package initial
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
@@ -63,9 +65,17 @@ func (a *App) Run() {
 }
 
 func (a *App) Shutdown() {
-	if err := sqlx.Close(a.config.sqlDB); err != nil {
-		panic(err)
+	fmt.Println("Shutting down... waiting for in-flight requests to finish")
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
+	defer cancel()
+
+	if err := a.FiberApp.ShutdownWithContext(ctx); err != nil {
+		fmt.Printf("Error during server shutdown: %v\n", err)
 	}
 
-	fmt.Println("Shutting down...")
+	if err := sqlx.Close(a.config.sqlDB); err != nil {
+		fmt.Printf("Error closing database: %v\n", err)
+	}
+
+	fmt.Println("Shutdown complete")
 }
