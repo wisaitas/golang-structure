@@ -22,7 +22,7 @@ func New(
 ) *UseCase {
 	return &UseCase{
 		CreateUser: createuser.New(userRepository),
-		GetUsers:   getusers.New(userRepository),
+		GetUsers:   getusers.New(userRepository, validator),
 		UpdateUser: updateuser.New(userRepository, validator),
 		DeleteUser: deleteuser.New(userRepository),
 	}

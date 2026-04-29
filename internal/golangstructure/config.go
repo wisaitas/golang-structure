@@ -6,6 +6,7 @@ var Config struct {
 	Service struct {
 		Name        string `env:"SERVICE_NAME" envDefault:"golang-structure"`
 		Port        int    `env:"SERVICE_PORT" envDefault:"8080"`
+		ReadTimeout int    `env:"SERVICE_READ_TIMEOUT" envDefault:"60"`
 		MaskPattern string `env:"MASK_PATTERN" envDefault:"{}"`
 	}
 	SQLDB sqlx.Config

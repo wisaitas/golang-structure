@@ -40,7 +40,8 @@ func New() *App {
 	repository := newRepository(config)
 	useCase := newUseCase(repository, sdk)
 	app := fiber.New(fiber.Config{
-		AppName: golangstructure.Config.Service.Name,
+		AppName:     golangstructure.Config.Service.Name,
+		ReadTimeout: time.Duration(golangstructure.Config.Service.ReadTimeout) * time.Second,
 	})
 	newMiddleware(app, config)
 
