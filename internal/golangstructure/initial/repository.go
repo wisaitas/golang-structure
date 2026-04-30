@@ -5,13 +5,15 @@ import (
 )
 
 type repository struct {
-	userRepository appRepository.UserRepository
+	userRepository    appRepository.UserRepository
+	userLogRepository appRepository.UserLogRepository
 }
 
 func newRepository(
 	config *config,
 ) *repository {
 	return &repository{
-		userRepository: appRepository.NewUserRepository(config.sqlDB),
+		userRepository:    appRepository.NewUserRepository(config.sqlDB),
+		userLogRepository: appRepository.NewUserLogRepository(config.sqlDB),
 	}
 }

@@ -24,6 +24,7 @@ func newService(
 }
 
 func (s *service) Service(c fiber.Ctx, req *Request, id int) error {
+	ctx := httpx.RequestContext(c)
 	user := entity.User{
 		Base: entity.Base{
 			ID: id,
@@ -32,7 +33,7 @@ func (s *service) Service(c fiber.Ctx, req *Request, id int) error {
 		Age:  req.Age,
 	}
 
-	if err := s.userRepository.ReplaceUser(httpx.RequestContext(c), &user); err != nil {
+	if err := s.userRepository.Update(ctx, &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})

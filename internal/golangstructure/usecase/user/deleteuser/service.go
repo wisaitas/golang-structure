@@ -1,7 +1,10 @@
 package deleteuser
 
 import (
+	"time"
+
 	"github.com/gofiber/fiber/v3"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
 )
@@ -23,7 +26,9 @@ func newService(
 }
 
 func (s *service) Service(c fiber.Ctx, userID int) error {
-	if err := s.userRepository.DeleteUser(httpx.RequestContext(c), userID); err != nil {
+	ctx := httpx.RequestContext(c)
+	db := s.userRepository.GetDB(ctx).Model(&entity.User{}).Where("id = ?", userID)
+	if err := s.userRepository.WithTx(db).Update(ctx, map[string]interface{}{"deleted_at": time.Now()}); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})

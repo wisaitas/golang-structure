@@ -8,10 +8,11 @@ import (
 
 func New(
 	userRepository repository.UserRepository,
+	userLogRepository repository.UserLogRepository,
 	validator validatorx.Validator,
 	bcrypt bcryptx.Bcrypt,
 ) *Handler {
-	service := newService(userRepository, bcrypt)
+	service := NewService(userRepository, userLogRepository, bcrypt)
 	handler := newHandler(service, validator)
 
 	return handler

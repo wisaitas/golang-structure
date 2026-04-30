@@ -10,3 +10,10 @@ func (s *service) mapRequestToEntity(request *Request) *entity.User {
 		Password: request.Password,
 	}
 }
+
+func (s *service) mapRequestToUserLog(user *entity.User) *entity.UserLog {
+	return &entity.UserLog{
+		UserID: user.ID,
+		Action: "register",
+	}
+}

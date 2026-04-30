@@ -24,12 +24,13 @@ func newService(
 }
 
 func (s *service) Service(c fiber.Ctx, req *Request) error {
+	ctx := httpx.RequestContext(c)
 	user := entity.User{
 		Name: req.Name,
 		Age:  req.Age,
 	}
 
-	if err := s.userRepository.CreateUser(httpx.RequestContext(c), &user); err != nil {
+	if err := s.userRepository.Create(ctx, &user); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),
 		})

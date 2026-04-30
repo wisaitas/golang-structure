@@ -13,10 +13,11 @@ type UseCase struct {
 
 func New(
 	userRepository repository.UserRepository,
+	userLogRepository repository.UserLogRepository,
 	validator validatorx.Validator,
 	bcrypt bcryptx.Bcrypt,
 ) *UseCase {
 	return &UseCase{
-		Register: register.New(userRepository, validator, bcrypt),
+		Register: register.New(userRepository, userLogRepository, validator, bcrypt),
 	}
 }

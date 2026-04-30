@@ -1,52 +1,24 @@
 package repository
 
 import (
-	"context"
-	"net/http"
-	"time"
-
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/gormx"
 
 	"gorm.io/gorm"
 )
 
 type UserRepository interface {
-	CreateUser(ctx context.Context, user *entity.User) error
-	GetUsers(ctx context.Context, users *[]entity.User) error
-	ReplaceUser(ctx context.Context, user *entity.User) error
-	DeleteUser(ctx context.Context, userID int) error
+	gormx.BaseRepository[entity.User]
 }
 
 type userRepository struct {
-	operation string
-	db        *gorm.DB
+	gormx.BaseRepository[entity.User]
 }
 
 func NewUserRepository(
 	db *gorm.DB,
 ) UserRepository {
 	return &userRepository{
-		operation: "[user.repository]",
-		db:        db,
+		BaseRepository: gormx.NewBaseRepository[entity.User](db),
 	}
-}
-
-func (r *userRepository) CreateUser(ctx context.Context, user *entity.User) error {
-	if err := r.db.WithContext(ctx).Create(&user).Error; err != nil {
-		return httpx.WrapError(r.operation, err, http.StatusInternalServerError)
-	}
-	return nil
-}
-
-func (r *userRepository) GetUsers(ctx context.Context, users *[]entity.User) error {
-	return r.db.WithContext(ctx).Where("deleted_at IS NULL").Find(&users).Error
-}
-
-func (r *userRepository) ReplaceUser(ctx context.Context, user *entity.User) error {
-	return r.db.WithContext(ctx).Updates(&user).Error
-}
-
-func (r *userRepository) DeleteUser(ctx context.Context, userID int) error {
-	return r.db.WithContext(ctx).Model(&entity.User{}).Where("id = ?", userID).Updates(map[string]interface{}{"deleted_at": time.Now()}).Error
 }
