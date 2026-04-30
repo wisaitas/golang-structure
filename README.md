@@ -11,6 +11,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 - [Tech Stack](#tech-stack)
 - [Getting Started](#getting-started)
 - [API Endpoints](#api-endpoints)
+- [Register Use Case Flow](#register-use-case-flow)
 - [Custom Distributed Tracing](#custom-distributed-tracing)
 - [Structured JSON Log Format](#structured-json-log-format)
 - [Data Masking](#data-masking)
@@ -20,6 +21,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 - [Monitoring Guide](#monitoring-guide)
 - [Environment Variables](#environment-variables)
 - [Makefile Commands](#makefile-commands)
+- [Testing](#testing)
 
 ## Architecture
 
@@ -79,7 +81,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 ├── internal/golangstructure/               # Application-private code
 │   ├── config.go                           #   Environment-based config struct
 │   ├── domain/
-│   │   ├── entity/                         #   GORM models (User, BaseEntity)
+│   │   ├── entity/                         #   GORM models (User, UserLog, Base)
 │   │   └── repository/                     #   Repository interfaces & implementations
 │   ├── initial/                            #   Dependency injection / bootstrap
 │   │   ├── initial.go                      #     App lifecycle (New, Run, Shutdown)
@@ -120,8 +122,12 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │   │   └── promx.go                        #     HTTP metrics + /metrics endpoint
 │   ├── db/sqlx/                            #   GORM setup + custom SQL logger
 │   │   ├── sql.go                          #     Connection factory, query collector
-│   │   ├── model.go                        #     BaseEntity (id, timestamps)
+│   │   ├── model.go                        #     Shared base DB model
 │   │   └── const.go                        #     Driver constants
+│   ├── db/gormx/                           #   Generic repository abstraction for GORM
+│   │   ├── model.go                        #     Condition, relation, pagination query models
+│   │   ├── repository.go                   #     BaseRepository (CRUD + transaction)
+│   │   └── repository_test.go              #     Transaction and create behavior tests
 │   ├── mask/                               #   Field masking engine
 │   │   ├── mask.go                         #     JSON/map value masking
 │   │   ├── sql.go                          #     SQL INSERT value masking
@@ -224,16 +230,27 @@ make gateway-run       # terminal 3
 
 ## API Endpoints
 
-| Method   | Path                     | Description                          |
-|----------|--------------------------|--------------------------------------|
-| `GET`    | `/livez`                 | Liveness probe (always 200)          |
-| `GET`    | `/readyz`                | Readiness probe (DB ping)            |
-| `POST`   | `/api/v1/auth/register`  | Register a new user                  |
-| `GET`    | `/api/v1/users/`         | List users                           |
-| `POST`   | `/api/v1/users/`         | Create user                          |
-| `PUT`    | `/api/v1/users/:user_id` | Update user                          |
-| `DELETE` | `/api/v1/users/:user_id` | Delete user                          |
-| `GET`    | `/metrics`               | Prometheus metrics endpoint          |
+| Method   | Path                     | Description                                         |
+|----------|--------------------------|-----------------------------------------------------|
+| `GET`    | `/livez`                 | Liveness probe (always 200)                         |
+| `GET`    | `/readyz`                | Readiness probe (DB ping)                           |
+| `POST`   | `/api/v1/auth/register`  | Register user and create `user_log` transactionally |
+| `GET`    | `/api/v1/users/`         | List users                                          |
+| `POST`   | `/api/v1/users/`         | Create user                                         |
+| `PUT`    | `/api/v1/users/:user_id` | Update user                                         |
+| `DELETE` | `/api/v1/users/:user_id` | Delete user                                         |
+| `GET`    | `/metrics`               | Prometheus metrics endpoint                         |
+
+## Register Use Case Flow
+
+`POST /api/v1/auth/register` now persists two records in a single transaction:
+
+1. Hash password with `bcryptx`
+2. Create `tbl_users` row
+3. Create `tbl_user_logs` row with action `register`
+4. Roll back everything if any step fails
+
+This flow is implemented in `internal/golangstructure/usecase/auth/register/service.go` using `gormx.BaseRepository` transaction helpers.
 
 **Demo chain** (distributed tracing):
 
@@ -655,3 +672,14 @@ You will see **3 log entries** — one from each service — all correlated by t
 | `make app-up`          | Docker: build & start app services (app + gateway + orchestrator)    |
 | `make app-down`        | Docker: stop app services                                            |
 | `make app-logs`        | Docker: follow app service logs                                      |
+
+## Testing
+
+- Unit tests are available for:
+  - register use case (`internal/golangstructure/usecase/auth/register/service_test.go`)
+  - generic GORM repository transaction behavior (`pkg/db/gormx/repository_test.go`)
+- Run all tests with:
+
+```bash
+go test ./...
+```
