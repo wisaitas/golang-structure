@@ -1,0 +1,18 @@
+meta {
+  name: Update user
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{golangstructureBase}}/api/v1/users/1
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "test03",
+    "age": 99
+  }
+}

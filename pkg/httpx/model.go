@@ -48,6 +48,7 @@ type Block struct {
 	Code         string   `json:"code"`
 	StackTraces  []string `json:"stackTraces,omitempty"`
 	DBLogs       []DBLog  `json:"dbLogs,omitempty"`
+	AppLogs      []AppLog `json:"appLogs,omitempty"`
 	Request      *Body    `json:"request"`
 	Response     *Body    `json:"response"`
 }
@@ -75,4 +76,19 @@ type dbLogContextKey struct{}
 type dbLogCollector struct {
 	mu   sync.Mutex
 	logs []DBLog
+}
+
+type AppLog struct {
+	Timestamp string         `json:"timestamp"`
+	Level     string         `json:"level"`
+	Caller    string         `json:"caller,omitempty"`
+	Message   string         `json:"message"`
+	Fields    map[string]any `json:"fields,omitempty"`
+}
+
+type appLogContextKey struct{}
+
+type appLogCollector struct {
+	mu   sync.Mutex
+	logs []AppLog
 }

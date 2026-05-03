@@ -1,0 +1,21 @@
+meta {
+  name: Register
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{golangstructureBase}}/api/v1/auth/register
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "name": "test01",
+    "email": "com@gmail.com",
+    "age": 1,
+    "password": "12345678",
+    "confirm_password": "12345678"
+  }
+}

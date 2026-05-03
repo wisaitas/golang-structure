@@ -1,0 +1,6 @@
+{
+  "version": "1",
+  "name": "golang-structure",
+  "type": "collection",
+  "ignore": ["node_modules", ".git"]
+}

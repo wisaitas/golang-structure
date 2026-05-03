@@ -15,6 +15,7 @@ import (
 	bcryptxMock "github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/gormx"
 	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/logx"
 	"gorm.io/gorm"
 )
 
@@ -45,7 +46,7 @@ func (s *ServiceTestSuite) SetupTest() {
 	s.userRepo = repositoryMocks.NewMockUserRepository(s.T())
 	s.userLogRepo = repositoryMocks.NewMockUserLogRepository(s.T())
 	s.bcrypt = bcryptxMock.NewMockBcrypt(s.T())
-	s.service = register.NewService(s.userRepo, s.userLogRepo, s.bcrypt)
+	s.service = register.NewService(s.userRepo, s.userLogRepo, s.bcrypt, logx.Noop())
 }
 
 func (s *ServiceTestSuite) TestServiceSuccess() {

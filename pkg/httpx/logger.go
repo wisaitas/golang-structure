@@ -93,6 +93,7 @@ func orgCodeFromResponseBody(body map[string]any) string {
 func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) error {
 	start := time.Now()
 	requestContext := WithDBLogCollector(c.Context())
+	requestContext = WithAppLogCollector(requestContext)
 	c.Locals("requestContext", requestContext)
 
 	hasMask := len(maskMap) > 0
@@ -170,6 +171,11 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) erro
 		errMsgPtr = &errorContext.ErrorMessage
 	}
 
+	appLogs := GetAppLogs(requestContext)
+	if hasMask {
+		appLogs = MaskAppLogs(appLogs, maskMap)
+	}
+
 	current := &Block{
 		Service:      serviceName,
 		Method:       c.Method(),
@@ -181,6 +187,7 @@ func HandleJSON(c fiber.Ctx, serviceName string, maskMap map[string]string) erro
 		ErrorMessage: errMsgPtr,
 		StackTraces:  errorContext.StackTraces,
 		DBLogs:       GetDBLogs(requestContext),
+		AppLogs:      appLogs,
 	}
 
 	logInfo := Log{

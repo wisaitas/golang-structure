@@ -11,6 +11,10 @@ var Config struct {
 	}
 	SQLDB sqlx.Config
 
+	Log struct {
+		Level string `env:"LOG_LEVEL" envDefault:"info"`
+	}
+
 	Bcrypt struct {
 		Cost int `env:"BCRYPT_COST" envDefault:"10"`
 	}

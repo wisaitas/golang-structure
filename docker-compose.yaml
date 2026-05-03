@@ -1,35 +1,36 @@
 services:
   # ── Application Services ──────────────────────────────────────────────
-  golang-structure:
-    build:
-      context: .
-      dockerfile: deployment/golang-structure/Dockerfile
-    container_name: golang-structure
-    command: ["./bin/golangstructure"]
-    ports:
-      - 8080:8080
-    environment:
-      SERVICE_NAME: golang-structure-service
-      SERVICE_PORT: 8080
-      MASK_PATTERN: '{"password":"4:2","email":"4:com"}'
-      SQLDB_HOST: postgres
-      SQLDB_PORT: 5432
-      SQLDB_USER: admin
-      SQLDB_PASSWORD: postgres
-      SQLDB_DB_NAME: golang-structure-db
-      SQLDB_SSL_MODE: disable
-      SQLDB_MAX_IDLE_CONNS: 10
-      SQLDB_MAX_OPEN_CONNS: 100
-      SQLDB_CONN_MAX_LIFETIME: 1h
-      SQLDB_DRIVER: postgres
-    labels:
-      logging: "true"
-      logging_jobname: "golang-structure"
-    depends_on:
-      atlas-migrate:
-        condition: service_completed_successfully
-    networks:
-      - app-network
+  # golang-structure:
+  #   build:
+  #     context: .
+  #     dockerfile: deployment/golang-structure/Dockerfile
+  #   container_name: golang-structure
+  #   command: ["./bin/golangstructure"]
+  #   ports:
+  #     - 8080:8080
+  #   environment:
+  #     SERVICE_NAME: golang-structure-service
+  #     SERVICE_PORT: 8080
+  #     MASK_PATTERN: '{"password":"4:2","email":"4:com"}'
+  #     LOG_LEVEL: info
+  #     SQLDB_HOST: postgres
+  #     SQLDB_PORT: 5432
+  #     SQLDB_USER: admin
+  #     SQLDB_PASSWORD: postgres
+  #     SQLDB_DB_NAME: golang-structure-db
+  #     SQLDB_SSL_MODE: disable
+  #     SQLDB_MAX_IDLE_CONNS: 10
+  #     SQLDB_MAX_OPEN_CONNS: 100
+  #     SQLDB_CONN_MAX_LIFETIME: 1h
+  #     SQLDB_DRIVER: postgres
+  #   labels:
+  #     logging: "true"
+  #     logging_jobname: "golang-structure"
+  #   depends_on:
+  #     atlas-migrate:
+  #       condition: service_completed_successfully
+  #   networks:
+  #     - app-network
 
   # ── Database ──────────────────────────────────────────────────────────
   postgres:

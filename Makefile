@@ -13,6 +13,9 @@ orchestrate-run:
 gateway-run:
 	go run cmd/gatewaydummie/main.go
 
+migrate-hash:
+	docker run --rm -v $(pwd)/deployment/atlas/migrations:/migrations arigaio/atlas:latest migrate hash --dir "file:///migrations"
+
 # ── Docker: Full Stack ──────────────────────────────────────────────────
 up:
 	docker compose up -d

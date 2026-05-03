@@ -14,6 +14,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 - [Register Use Case Flow](#register-use-case-flow)
 - [Custom Distributed Tracing](#custom-distributed-tracing)
 - [Structured JSON Log Format](#structured-json-log-format)
+- [Application Logging (zap)](#application-logging-zap)
 - [Data Masking](#data-masking)
 - [Prometheus Metrics](#prometheus-metrics)
 - [Database Migration](#database-migration)
@@ -115,9 +116,13 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │   │   ├── logger.go                       #     Request logging middleware
 │   │   ├── http.go                         #     HTTP client with header propagation
 │   │   ├── error.go                        #     Error wrapping with stack traces
-│   │   ├── model.go                        #     Log, Block, DBLog structs
+│   │   ├── model.go                        #     Log, Block, DBLog, AppLog structs
 │   │   ├── const.go                        #     Headers, response codes
-│   │   └── util.go                         #     DB log collector, masking helpers
+│   │   └── util.go                         #     DB/App log collectors, masking helpers
+│   ├── logx/                               #   Application logger (zap-backed)
+│   │   ├── logger.go                       #     Level-filtered logger that pushes to per-request collector
+│   │   ├── writer.go                       #     stdout sink for fallback (no request context)
+│   │   └── noop.go                         #     Noop logger for tests
 │   ├── promx/                              #   Prometheus metrics middleware
 │   │   └── promx.go                        #     HTTP metrics + /metrics endpoint
 │   ├── db/sqlx/                            #   GORM setup + custom SQL logger
@@ -140,7 +145,9 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │   ├── atlas/                              #   Database migration (Atlas)
 │   │   ├── atlas.hcl                       #     Atlas project config
 │   │   └── migrations/                     #     SQL migration files
-│   │       └── 20260401000001_create_tbl_users.sql
+│   │       ├── 20260401000001_create_tbl_users.sql
+│   │       ├── 20260503000001_create_tbl_user_logs.sql
+│   │       └── atlas.sum
 │   ├── loki/loki-config.yaml               #   Loki log storage config
 │   ├── tempo/tempo-config.yaml             #   Tempo trace storage config
 │   ├── prometheus/prometheus.yaml          #   Prometheus scrape config
@@ -153,7 +160,8 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │           ├── golang-structure.json          # Service dashboard (metrics + logs)
 │           └── centralized-logs.json          # Centralized log dashboard
 │
-├── httptest/                               # REST client test files (.http)
+├── docs/                                   # Documentation
+│   └── apis/bruno/                         #   Bruno API collection (request samples)
 ├── docker-compose.yaml                     # Full stack definition
 ├── Makefile                                # Dev & deploy commands
 ├── .env.template                           # Environment variable template
@@ -171,6 +179,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 | Config | caarlos0/env + godotenv |
 | Validation | go-playground/validator v10 |
 | Password | bcrypt (golang.org/x/crypto) |
+| Application Logging | Uber Zap (go.uber.org/zap) |
 | DB Migration | Atlas (arigaio/atlas) |
 | Metrics | Prometheus 3.3 + client_golang |
 | Telemetry Collector | Grafana Alloy 1.8 |
@@ -243,14 +252,15 @@ make gateway-run       # terminal 3
 
 ## Register Use Case Flow
 
-`POST /api/v1/auth/register` now persists two records in a single transaction:
+`POST /api/v1/auth/register` persists two records in a single transaction and emits structured app logs at every step:
 
-1. Hash password with `bcryptx`
-2. Create `tbl_users` row
-3. Create `tbl_user_logs` row with action `register`
-4. Roll back everything if any step fails
+1. Hash password with `bcryptx` (logs `debug: register flow started`)
+2. Open transaction via `gormx.BaseRepository.Transaction(...)`
+3. Create `tbl_users` row (logs `warn: create user conflict` on duplicate email, `error: create user failed` otherwise)
+4. Create `tbl_user_logs` row with action `register`, sharing the same `tx` via `WithTx(tx)` (logs `error: create user log failed` on failure)
+5. Commit on success and log `info: register completed`. Roll back everything otherwise
 
-This flow is implemented in `internal/golangstructure/usecase/auth/register/service.go` using `gormx.BaseRepository` transaction helpers.
+The flow lives in `internal/golangstructure/usecase/auth/register/service.go`. App logs are aggregated into the request's `appLogs` array via the injected `logx.Logger` — see [Application Logging](#application-logging-zap).
 
 **Demo chain** (distributed tracing):
 
@@ -356,6 +366,22 @@ Every HTTP request produces a single JSON log line to stdout:
         "error": "ERROR: relation \"tbl_users\" does not exist (SQLSTATE 42P01)"
       }
     ],
+    "appLogs": [
+      {
+        "timestamp": "2026-03-30T14:27:06+07:00",
+        "level": "debug",
+        "caller": "register/service.go:48",
+        "message": "register flow started",
+        "fields": { "email": "com@******com", "name": "test01" }
+      },
+      {
+        "timestamp": "2026-03-30T14:27:06+07:00",
+        "level": "error",
+        "caller": "register/service.go:71",
+        "message": "create user failed",
+        "fields": { "error": "ERROR: relation \"tbl_users\" does not exist (SQLSTATE 42P01)" }
+      }
+    ],
     "request": {
       "headers": { "Content-Type": "application/json" },
       "body": { "name": "test01", "email": "com@******com", "password": "1234**78" }
@@ -391,6 +417,7 @@ Every HTTP request produces a single JSON log line to stdout:
 | `errorMessage` | string   | Root error message                        |
 | `stackTraces`  | []string | Error stack trace chain                   |
 | `dbLogs`       | []DBLog  | SQL queries executed during this request  |
+| `appLogs`      | []AppLog | Application logs emitted via `logx.Logger`|
 | `request`      | Body     | Masked request headers + body             |
 | `response`     | Body     | Masked response headers + body            |
 
@@ -403,6 +430,94 @@ Every HTTP request produces a single JSON log line to stdout:
 | `rows`       | int    | Rows affected        |
 | `durationMs` | int    | Query execution time |
 | `error`      | string | Query error (if any) |
+
+### AppLog Fields
+
+| Field       | Type           | Description                                                     |
+|-------------|----------------|-----------------------------------------------------------------|
+| `timestamp` | string         | When the log was emitted (RFC3339)                              |
+| `level`     | string         | `debug` / `info` / `warn` / `error`                             |
+| `caller`    | string         | Source file and line where the log was emitted                  |
+| `message`   | string         | Log message                                                     |
+| `fields`    | map[string]any | Structured fields from `zap.Field` (already masked, see below)  |
+
+## Application Logging (zap)
+
+Beyond the per-request log line, the project ships a custom application logger built on **Uber Zap** (`pkg/logx`). It is injected through the SDK and used inside use cases (e.g. `register.service`).
+
+The logger has one defining property: **logs emitted while a request is being processed do not print to stdout — they are appended to `current.appLogs` of that request's JSON log line**, so a single request stays a single JSON entry.
+
+### Behavior
+
+| Where the log is emitted              | What happens                                                                                          |
+|---------------------------------------|-------------------------------------------------------------------------------------------------------|
+| Inside an HTTP request (with context) | Pushed to the per-request `AppLog` collector, masked with `MASK_PATTERN`, emitted in `current.appLogs`|
+| Outside a request (startup, jobs)     | Falls back to JSON output via Zap to stdout                                                           |
+| Below the configured `LOG_LEVEL`      | Dropped                                                                                               |
+
+### Configuration
+
+```bash
+LOG_LEVEL=debug   # debug | info | warn | error
+```
+
+Default is `info`. Levels are inclusive (e.g. `warn` shows `warn` + `error`).
+
+### Logger Interface
+
+```go
+type Logger interface {
+    Debug(ctx context.Context, msg string, fields ...zap.Field)
+    Info(ctx context.Context, msg string, fields ...zap.Field)
+    Warn(ctx context.Context, msg string, fields ...zap.Field)
+    Error(ctx context.Context, msg string, fields ...zap.Field)
+    With(fields ...zap.Field) Logger
+    Sync() error
+}
+```
+
+`logx.Noop()` is provided for unit tests so services can be constructed without a real logger.
+
+### Example — Inject and Use
+
+`internal/golangstructure/usecase/auth/register/service.go`:
+
+```go
+type service struct {
+    // ...
+    logger logx.Logger
+}
+
+func (s *service) Service(ctx context.Context, request *Request) error {
+    s.logger.Debug(ctx, "register flow started",
+        zap.String("email", request.Email),
+        zap.String("name", request.Name),
+    )
+    // ...
+    s.logger.Info(ctx, "register completed",
+        zap.Int("userId", user.ID),
+        zap.String("email", request.Email),
+    )
+    return nil
+}
+```
+
+These calls show up under `current.appLogs` in the same JSON log entry as the request, with `email` already masked according to `MASK_PATTERN`.
+
+### Wiring
+
+```
+.env (LOG_LEVEL)
+        │
+        ▼
+initial.sdk ── logx.NewLogger(level)
+        │
+        ▼
+auth.UseCase ── register.New(... , logger)
+        │
+        ▼
+register.service.logger
+```
 
 ## Data Masking
 
@@ -426,6 +541,7 @@ MASK_PATTERN={"password":"4:2","email":"4:com"}
 - **Request/Response body** — JSON fields matching pattern keys
 - **Headers** — Header values matching pattern keys
 - **SQL queries** — Column values in `INSERT ... VALUES(...)` statements matching pattern keys
+- **App logs** — `appLogs[].fields` keys matching pattern keys (recursive across nested maps/slices)
 
 ## Prometheus Metrics
 
@@ -468,7 +584,8 @@ Schema changes are managed by [Atlas](https://atlasgo.io/) and applied automatic
 deployment/atlas/
 ├── atlas.hcl                                    # Atlas project config
 └── migrations/
-    ├── 20260401000001_create_tbl_users.sql      # Initial schema
+    ├── 20260401000001_create_tbl_users.sql      # Initial users schema
+    ├── 20260503000001_create_tbl_user_logs.sql  # User log schema (used by register flow)
     └── atlas.sum                                # Checksum integrity file
 ```
 
@@ -486,6 +603,9 @@ atlas migrate new <migration_name> --dir "file://deployment/atlas/migrations"
 
 # Write your SQL in the generated file, then update the checksum
 atlas migrate hash --dir "file://deployment/atlas/migrations"
+
+# Or use the convenience target (runs Atlas in Docker, no local install required)
+make migrate-hash
 ```
 
 ## Observability Stack
@@ -639,22 +759,24 @@ You will see **3 log entries** — one from each service — all correlated by t
 
 ## Environment Variables
 
-| Variable                  | Default            | Description                                 |
-|---------------------------|--------------------|---------------------------------------------|
-| `SERVICE_NAME`            | `golang-structure` | Service name in logs and metrics            |
-| `SERVICE_PORT`            | `8080`             | HTTP listen port                            |
-| `MASK_PATTERN`            | `{}`               | JSON masking rules                          |
-| `SQLDB_HOST`              | -                  | Database host                               |
-| `SQLDB_PORT`              | -                  | Database port                               |
-| `SQLDB_USER`              | -                  | Database user                               |
-| `SQLDB_PASSWORD`          | -                  | Database password                           |
-| `SQLDB_DB_NAME`           | -                  | Database name                               |
-| `SQLDB_SSL_MODE`          | -                  | SSL mode (disable/require)                  |
-| `SQLDB_MAX_IDLE_CONNS`    | -                  | Max idle DB connections                     |
-| `SQLDB_MAX_OPEN_CONNS`    | -                  | Max open DB connections                     |
-| `SQLDB_CONN_MAX_LIFETIME` | -                  | DB connection max lifetime                  |
-| `SQLDB_DRIVER`            | -                  | DB driver (postgres/mysql/sqlite/sqlserver) |
-| `BCRYPT_COST`             | `10`               | bcrypt hashing cost                         |
+| Variable                  | Default            | Description                                          |
+|---------------------------|--------------------|------------------------------------------------------|
+| `SERVICE_NAME`            | `golang-structure` | Service name in logs and metrics                     |
+| `SERVICE_PORT`            | `8080`             | HTTP listen port                                     |
+| `SERVICE_READ_TIMEOUT`    | `60`               | Fiber read timeout (seconds)                         |
+| `MASK_PATTERN`            | `{}`               | JSON masking rules (also applied to `appLogs.fields`)|
+| `LOG_LEVEL`               | `info`             | App logger threshold: `debug` / `info` / `warn` / `error` |
+| `SQLDB_HOST`              | -                  | Database host                                        |
+| `SQLDB_PORT`              | -                  | Database port                                        |
+| `SQLDB_USER`              | -                  | Database user                                        |
+| `SQLDB_PASSWORD`          | -                  | Database password                                    |
+| `SQLDB_DB_NAME`           | -                  | Database name                                        |
+| `SQLDB_SSL_MODE`          | -                  | SSL mode (disable/require)                           |
+| `SQLDB_MAX_IDLE_CONNS`    | -                  | Max idle DB connections                              |
+| `SQLDB_MAX_OPEN_CONNS`    | -                  | Max open DB connections                              |
+| `SQLDB_CONN_MAX_LIFETIME` | -                  | DB connection max lifetime                           |
+| `SQLDB_DRIVER`            | -                  | DB driver (postgres/mysql/sqlite/sqlserver)          |
+| `BCRYPT_COST`             | `10`               | bcrypt hashing cost                                  |
 
 ## Makefile Commands
 
@@ -663,6 +785,7 @@ You will see **3 log entries** — one from each service — all correlated by t
 | `make run`             | Run main API locally                                                 |
 | `make gateway-run`     | Run gateway demo locally                                             |
 | `make orchestrate-run` | Run orchestrator demo locally                                        |
+| `make migrate-hash`    | Re-hash Atlas migration directory (runs Atlas in Docker)             |
 | `make up`              | Docker: start full stack (`docker compose up -d`)                    |
 | `make down`            | Docker: stop full stack                                              |
 | `make logs`            | Docker: follow all logs                                              |
@@ -675,11 +798,33 @@ You will see **3 log entries** — one from each service — all correlated by t
 
 ## Testing
 
-- Unit tests are available for:
-  - register use case (`internal/golangstructure/usecase/auth/register/service_test.go`)
-  - generic GORM repository transaction behavior (`pkg/db/gormx/repository_test.go`)
-- Run all tests with:
+Unit tests cover:
+
+| Path                                                                   | Coverage                                                                                  |
+|------------------------------------------------------------------------|-------------------------------------------------------------------------------------------|
+| `internal/golangstructure/usecase/auth/register/service_test.go`       | Register service: success, duplicate user, user log error, transaction error, bcrypt error|
+| `pkg/db/gormx/repository_test.go`                                      | Generic `BaseRepository` transaction and CRUD behavior                                    |
+| `pkg/mask/mask_test.go`                                                | JSON/map masking engine                                                                   |
+| `pkg/mask/sql_test.go`                                                 | SQL `INSERT ... VALUES(...)` masking                                                      |
+
+Tests in the register suite use `mockery`-generated mocks (`internal/.../repository/mocks`) and `logx.Noop()` for the logger.
+
+Run all tests:
 
 ```bash
 go test ./...
+```
+
+## Bruno API Collection
+
+Sample requests for every endpoint live under `docs/apis/bruno/`. Open the folder with [Bruno](https://www.usebruno.com/) to drive the local stack interactively without writing curl commands.
+
+```
+docs/apis/bruno/
+├── golangstructure/
+│   ├── auth/Register.bru
+│   ├── health/{Livez,Readyz}.bru
+│   └── users/{Get users, Create user, Update user, Delete user}.bru
+├── orchestratedummie/Register.bru
+└── gatewaydummie/Register.bru
 ```

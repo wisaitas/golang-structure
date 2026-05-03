@@ -156,6 +156,19 @@ func maskSlice(slice []any, maskMap map[string]string) []any {
 	return result
 }
 
+func MaskAppLogs(logs []AppLog, maskMap map[string]string) []AppLog {
+	if len(logs) == 0 || len(maskMap) == 0 {
+		return logs
+	}
+
+	result := make([]AppLog, len(logs))
+	for i, log := range logs {
+		log.Fields = MaskData(log.Fields, maskMap)
+		result[i] = log
+	}
+	return result
+}
+
 func MaskHeaders(headers map[string]string, maskMap map[string]string) map[string]string {
 	if headers == nil || len(maskMap) == 0 {
 		return headers
@@ -283,6 +296,49 @@ func GetDBLogs(ctx context.Context) []DBLog {
 	}
 
 	result := make([]DBLog, len(collector.logs))
+	copy(result, collector.logs)
+	return result
+}
+
+func WithAppLogCollector(ctx context.Context) context.Context {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return context.WithValue(ctx, appLogContextKey{}, &appLogCollector{logs: make([]AppLog, 0, 8)})
+}
+
+func AddAppLog(ctx context.Context, log AppLog) bool {
+	if ctx == nil {
+		return false
+	}
+	collector, ok := ctx.Value(appLogContextKey{}).(*appLogCollector)
+	if !ok || collector == nil {
+		return false
+	}
+
+	collector.mu.Lock()
+	collector.logs = append(collector.logs, log)
+	collector.mu.Unlock()
+	return true
+}
+
+func GetAppLogs(ctx context.Context) []AppLog {
+	if ctx == nil {
+		return nil
+	}
+	collector, ok := ctx.Value(appLogContextKey{}).(*appLogCollector)
+	if !ok || collector == nil {
+		return nil
+	}
+
+	collector.mu.Lock()
+	defer collector.mu.Unlock()
+
+	if len(collector.logs) == 0 {
+		return nil
+	}
+
+	result := make([]AppLog, len(collector.logs))
 	copy(result, collector.logs)
 	return result
 }
