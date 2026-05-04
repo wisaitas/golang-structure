@@ -1,6 +1,6 @@
 package getusers
 
-import "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+import "github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 
 func (s *service) mapEntitiesToResponses(users []entity.User) []Response {
 	out := make([]Response, 0, len(users))

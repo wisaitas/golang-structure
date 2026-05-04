@@ -1,8 +1,8 @@
 package updateuser
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+	"github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
 func New(

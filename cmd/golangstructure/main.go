@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/initial"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/initial"
 )
 
 func main() {

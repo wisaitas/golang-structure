@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
+	"github.com/wisaitas/golang-structure/pkg/mask"
 )
 
 func CheckStatusCode2xx(statusCode int) bool {

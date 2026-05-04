@@ -2,8 +2,8 @@ package register
 
 import (
 	"github.com/gofiber/fiber/v3"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
 type Handler struct {

@@ -1,6 +1,6 @@
 package golangstructure
 
-import "github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/sqlx"
+import "github.com/wisaitas/golang-structure/pkg/db/sqlx"
 
 var Config struct {
 	Service struct {

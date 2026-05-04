@@ -8,14 +8,14 @@ import (
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
-	repositoryMocks "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository/mocks"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/auth/register"
-	bcryptxMock "github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/gormx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/logx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+	repositoryMocks "github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository/mocks"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/auth/register"
+	bcryptxMock "github.com/wisaitas/golang-structure/pkg/bcryptx"
+	"github.com/wisaitas/golang-structure/pkg/db/gormx"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/logx"
 	"gorm.io/gorm"
 )
 

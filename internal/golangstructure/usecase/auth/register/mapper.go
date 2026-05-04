@@ -1,6 +1,6 @@
 package register
 
-import "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+import "github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 
 func (s *service) mapRequestToEntity(request *Request) *entity.User {
 	return &entity.User{

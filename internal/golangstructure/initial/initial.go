@@ -11,8 +11,8 @@ import (
 
 	"github.com/caarlos0/env/v11"
 	"github.com/joho/godotenv"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/sqlx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure"
+	"github.com/wisaitas/golang-structure/pkg/db/sqlx"
 
 	"github.com/gofiber/fiber/v3"
 )

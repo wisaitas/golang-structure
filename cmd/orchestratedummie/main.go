@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
 func getEnv(key, fallback string) string {

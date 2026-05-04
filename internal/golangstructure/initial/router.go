@@ -2,7 +2,7 @@ package initial
 
 import (
 	"github.com/gofiber/fiber/v3"
-	appRouter "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/router"
+	appRouter "github.com/wisaitas/golang-structure/internal/golangstructure/router"
 )
 
 type router struct {

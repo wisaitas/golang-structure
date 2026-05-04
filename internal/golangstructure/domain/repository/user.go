@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/gormx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+	"github.com/wisaitas/golang-structure/pkg/db/gormx"
 
 	"gorm.io/gorm"
 )

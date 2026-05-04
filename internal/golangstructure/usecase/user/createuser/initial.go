@@ -1,6 +1,6 @@
 package createuser
 
-import "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+import "github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 
 func New(
 	userRepository repository.UserRepository,

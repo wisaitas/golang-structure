@@ -1,12 +1,12 @@
 package user
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/createuser"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/deleteuser"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/getusers"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/updateuser"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/createuser"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/deleteuser"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/getusers"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user/updateuser"
+	"github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
 type UseCase struct {

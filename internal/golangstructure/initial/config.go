@@ -1,8 +1,8 @@
 package initial
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/sqlx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure"
+	"github.com/wisaitas/golang-structure/pkg/db/sqlx"
 	"gorm.io/gorm"
 )
 
@@ -20,4 +20,3 @@ func newConfig() *config {
 		sqlDB: sqlDB,
 	}
 }
-

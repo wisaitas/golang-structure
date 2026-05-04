@@ -1,6 +1,6 @@
 with-expecter: true
 packages:
-  github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository:
+  github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository:
     config:
       dir: internal/golangstructure/domain/repository/mocks
       outpkg: mocks
@@ -11,19 +11,19 @@ packages:
       UserLogRepository:
         config:
           filename: user_log.go
-  # github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx:
-  #   config:
-  #     dir: pkg/bcryptx
-  #     outpkg: bcryptx
-  #   interfaces:
-  #     Bcrypt:
-  #       config:
-  #         filename: mock.go
-  # github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx:
-  #   config:
-  #     dir: pkg/validatorx
-  #     outpkg: validatorx
-  #   interfaces:
-  #     Validator:
-  #       config:
-  #         filename: mock.go
+  github.com/wisaitas/golang-structure/pkg/bcryptx:
+    config:
+      dir: pkg/bcryptx
+      outpkg: bcryptx
+    interfaces:
+      Bcrypt:
+        config:
+          filename: mock.go
+  github.com/wisaitas/golang-structure/pkg/validatorx:
+    config:
+      dir: pkg/validatorx
+      outpkg: validatorx
+    interfaces:
+      Validator:
+        config:
+          filename: mock.go

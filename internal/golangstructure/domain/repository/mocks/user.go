@@ -5,10 +5,10 @@ package mocks
 import (
 	context "context"
 
-	entity "github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+	entity "github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	gorm "gorm.io/gorm"
 
-	gormx "github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/gormx"
+	gormx "github.com/wisaitas/golang-structure/pkg/db/gormx"
 
 	mock "github.com/stretchr/testify/mock"
 )

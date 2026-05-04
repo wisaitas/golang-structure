@@ -2,7 +2,7 @@ package router
 
 import (
 	"github.com/gofiber/fiber/v3"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user"
 )
 
 type UserRouter struct {

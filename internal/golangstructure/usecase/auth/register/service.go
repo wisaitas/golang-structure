@@ -5,13 +5,13 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/gormx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/logx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+	"github.com/wisaitas/golang-structure/pkg/bcryptx"
+	"github.com/wisaitas/golang-structure/pkg/db/gormx"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/logx"
 	"go.uber.org/zap"
 )
 

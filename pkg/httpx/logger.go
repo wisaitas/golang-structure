@@ -9,7 +9,7 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/google/uuid"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
+	"github.com/wisaitas/golang-structure/pkg/mask"
 )
 
 func NewLogger(config LoggerConfig) fiber.Handler {

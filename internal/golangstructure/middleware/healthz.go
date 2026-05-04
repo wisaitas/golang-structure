@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/gofiber/fiber/v3"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/db/sqlx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/db/sqlx"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
 	"gorm.io/gorm"
 )
 

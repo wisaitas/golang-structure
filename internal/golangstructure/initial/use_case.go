@@ -1,8 +1,8 @@
 package initial
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/auth"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/auth"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/user"
 )
 
 type useCase struct {

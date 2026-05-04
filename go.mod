@@ -1,4 +1,4 @@
-module github.com/wisaitas/github.com/wisaitas/golang-structure
+module github.com/wisaitas/golang-structure
 
 go 1.26.2
 

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/mask"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/mask"
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"

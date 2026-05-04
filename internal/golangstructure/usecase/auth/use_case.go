@@ -1,11 +1,11 @@
 package auth
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure/usecase/auth/register"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/logx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
+	"github.com/wisaitas/golang-structure/internal/golangstructure/usecase/auth/register"
+	"github.com/wisaitas/golang-structure/pkg/bcryptx"
+	"github.com/wisaitas/golang-structure/pkg/logx"
+	"github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
 type UseCase struct {

@@ -1,10 +1,10 @@
 package initial
 
 import (
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/internal/golangstructure"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/bcryptx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/logx"
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/validatorx"
+	"github.com/wisaitas/golang-structure/internal/golangstructure"
+	"github.com/wisaitas/golang-structure/pkg/bcryptx"
+	"github.com/wisaitas/golang-structure/pkg/logx"
+	"github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
 type sdk struct {

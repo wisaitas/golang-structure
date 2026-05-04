@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/wisaitas/github.com/wisaitas/golang-structure/pkg/httpx"
+	"github.com/wisaitas/golang-structure/pkg/httpx"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
