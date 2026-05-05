@@ -18,7 +18,7 @@ import (
 )
 
 func init() {
-	for _, path := range []string{".env", "../.env", "../../.env"} {
+	for _, path := range []string{".env"} {
 		if err := godotenv.Load(path); err == nil {
 			break
 		}
