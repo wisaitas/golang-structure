@@ -18,6 +18,7 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 - [Data Masking](#data-masking)
 - [Prometheus Metrics](#prometheus-metrics)
 - [Database Migration](#database-migration)
+- [Entity code generation (genentity)](#entity-code-generation-genentity)
 - [Observability Stack](#observability-stack)
 - [Monitoring Guide](#monitoring-guide)
 - [Environment Variables](#environment-variables)
@@ -61,6 +62,8 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
     └──►─────────└──►─────────────┘
 ```
 
+In the checked-in `docker-compose.yaml`, the **golang-structure** service definition is **commented out** by default: use `make run` locally while Compose provides Postgres, Atlas migrations, and observability.
+
 ### Data Flow
 
 | Signal | Path |
@@ -77,12 +80,13 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 ├── cmd/                                    # Application entry points
 │   ├── golangstructure/main.go             #   Main API service (:8080)
 │   ├── gatewaydummie/main.go               #   Demo gateway (:3000)
-│   └── orchestratedummie/main.go           #   Demo orchestrator (:8081)
+│   ├── orchestratedummie/main.go           #   Demo orchestrator (:8081)
+│   └── genentity/main.go                   #   CLI: Postgres introspection → GORM entity .go files
 │
 ├── internal/golangstructure/               # Application-private code
 │   ├── config.go                           #   Environment-based config struct
 │   ├── domain/
-│   │   ├── entity/                         #   GORM models (User, UserLog, Base)
+│   │   ├── entity/                         #   GORM models (TblUsers, TblUserLogs; generated via genentity)
 │   │   └── repository/                     #   Repository interfaces & implementations
 │   ├── initial/                            #   Dependency injection / bootstrap
 │   │   ├── initial.go                      #     App lifecycle (New, Run, Shutdown)
@@ -142,12 +146,16 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 │
 ├── deployment/                             # Infrastructure configs
 │   ├── golang-structure/Dockerfile         #   Multi-stage Go build
-│   ├── atlas/                              #   Database migration (Atlas)
+│   ├── atlas/                              #   Database migration (Atlas; used by docker compose atlas-migrate)
 │   │   ├── atlas.hcl                       #     Atlas project config
 │   │   └── migrations/                     #     SQL migration files
 │   │       ├── 20260401000001_create_tbl_users.sql
 │   │       ├── 20260503000001_create_tbl_user_logs.sql
 │   │       └── atlas.sum
+│   ├── liquibase/                          #   Optional Liquibase (local `make liquibase-up`)
+│   │   ├── changelogs/                     #     master.yml + per-change YAML
+│   │   ├── changesets/golangstructure/...  #     up/ down/ verify SQL per changeset
+│   │   └── properties/dev.properties       #     JDBC URL + changelog path for CLI
 │   ├── loki/loki-config.yaml               #   Loki log storage config
 │   ├── tempo/tempo-config.yaml             #   Tempo trace storage config
 │   ├── prometheus/prometheus.yaml          #   Prometheus scrape config
@@ -176,11 +184,13 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 | Language | Go 1.26 |
 | HTTP Framework | Fiber v3 |
 | ORM | GORM (PostgreSQL, MySQL, SQLite, SQL Server) |
+| Primary keys (users / user_logs) | UUID (`github.com/google/uuid`) in generated entities |
 | Config | caarlos0/env + godotenv |
 | Validation | go-playground/validator v10 |
 | Password | bcrypt (golang.org/x/crypto) |
 | Application Logging | Uber Zap (go.uber.org/zap) |
-| DB Migration | Atlas (arigaio/atlas) |
+| DB Migration (Docker) | Atlas (`atlas-migrate` service) |
+| DB Migration (local CLI, optional) | Liquibase + `make liquibase-up` |
 | Metrics | Prometheus 3.3 + client_golang |
 | Telemetry Collector | Grafana Alloy 1.8 |
 | Log Storage | Grafana Loki 3.5 |
@@ -196,30 +206,31 @@ Integrated with **Grafana + Loki + Tempo + Alloy + Prometheus** observability st
 - Go 1.26+
 - Docker & Docker Compose
 
-### Run Full Stack (Docker)
+### Run stack with Docker Compose
+
+`docker-compose.yaml` currently starts **Postgres**, the **atlas-migrate** one-shot (applies `deployment/atlas/migrations`), and the **observability** services (Loki, Tempo, Prometheus, Alloy, Grafana). The **main API container is commented out** — run the Go service on the host for development.
 
 ```bash
-# Start everything: app + database + observability
 make up
-
-# View logs
-make logs
 ```
 
-### Run Infrastructure Only (develop locally)
+Use `docker compose logs -f` (or a specific service name) to follow logs.
+
+### Develop the API locally
 
 ```bash
-# Start database + observability stack
-make infra-up
-
-# Copy and configure environment
 cp .env.template .env
-# Edit .env with your settings
+# Edit .env: set SQLDB_USER / SQLDB_PASSWORD to match Postgres (e.g. admin / postgres from compose)
 
-# Run the main API locally
+make up   # Postgres + migrations + observability
+
+# Optional: apply Liquibase changesets instead of or after Atlas (requires Liquibase CLI installed)
+# make liquibase-up
+
+# Run the main API (listens on SERVICE_PORT, default 8080)
 make run
 
-# (Optional) Run dummy services for distributed tracing demo
+# Optional: dummy services for the distributed tracing demo
 make orchestrate-run   # terminal 2
 make gateway-run       # terminal 3
 ```
@@ -246,8 +257,8 @@ make gateway-run       # terminal 3
 | `POST`   | `/api/v1/auth/register`  | Register user and create `user_log` transactionally |
 | `GET`    | `/api/v1/users/`         | List users                                          |
 | `POST`   | `/api/v1/users/`         | Create user                                         |
-| `PUT`    | `/api/v1/users/:user_id` | Update user                                         |
-| `DELETE` | `/api/v1/users/:user_id` | Delete user                                         |
+| `PUT`    | `/api/v1/users/:user_id` | Update user (`user_id` = UUID string)               |
+| `DELETE` | `/api/v1/users/:user_id` | Delete user (`user_id` = UUID string)                |
 | `GET`    | `/metrics`               | Prometheus metrics endpoint                         |
 
 ## Register Use Case Flow
@@ -256,9 +267,9 @@ make gateway-run       # terminal 3
 
 1. Hash password with `bcryptx` (logs `debug: register flow started`)
 2. Open transaction via `gormx.BaseRepository.Transaction(...)`
-3. Create `tbl_users` row (logs `warn: create user conflict` on duplicate email, `error: create user failed` otherwise)
+3. Create `tbl_users` row (`id` is a UUID from Postgres defaults) — logs `warn: create user conflict` on duplicate email, `error: create user failed` otherwise
 4. Create `tbl_user_logs` row with action `register`, sharing the same `tx` via `WithTx(tx)` (logs `error: create user log failed` on failure)
-5. Commit on success and log `info: register completed`. Roll back everything otherwise
+5. Commit on success and log `info: register completed` (includes `userId` as string). Roll back everything otherwise
 
 The flow lives in `internal/golangstructure/usecase/auth/register/service.go`. App logs are aggregated into the request's `appLogs` array via the injected `logx.Logger` — see [Application Logging](#application-logging-zap).
 
@@ -495,7 +506,7 @@ func (s *service) Service(ctx context.Context, request *Request) error {
     )
     // ...
     s.logger.Info(ctx, "register completed",
-        zap.Int("userId", user.ID),
+        zap.String("userId", user.ID.String()),
         zap.String("email", request.Email),
     )
     return nil
@@ -576,37 +587,83 @@ The `prometheus/client_golang` library automatically exposes Go runtime metrics 
 
 ## Database Migration
 
-Schema changes are managed by [Atlas](https://atlasgo.io/) and applied automatically via the `atlas-migrate` Docker service before the application starts.
+The repo supports **two** migration paths:
 
-### Migration Files
+| Path | When | Location |
+|------|------|----------|
+| **Atlas** | `docker compose up` runs the `atlas-migrate` service before apps would start | `deployment/atlas/migrations/` |
+| **Liquibase** | Local CLI: `make liquibase-up` (requires [Liquibase](https://www.liquibase.org/) installed) | `deployment/liquibase/` |
+
+Keep the database schema consistent with `internal/golangstructure/domain/entity/*.go` (regenerate with [`genentity`](#entity-code-generation-genentity) after schema changes). The Liquibase `up` SQL in this repo uses **UUID** primary keys for `tbl_users` and `tbl_user_logs`, matching the generated GORM models. The Atlas SQL under `deployment/atlas/migrations` is what Compose applies automatically — if you change PK types or columns, update **both** Atlas and Liquibase (or only the path you use) so they stay aligned.
+
+### Atlas (Docker Compose)
 
 ```
 deployment/atlas/
 ├── atlas.hcl                                    # Atlas project config
 └── migrations/
     ├── 20260401000001_create_tbl_users.sql      # Initial users schema
-    ├── 20260503000001_create_tbl_user_logs.sql  # User log schema (used by register flow)
+    ├── 20260503000001_create_tbl_user_logs.sql  # User log schema (register flow)
     └── atlas.sum                                # Checksum integrity file
 ```
 
-### How It Works
+1. `docker compose up` starts **postgres** (with health check)
+2. **atlas-migrate** runs `atlas migrate apply` against the database
+3. Observability services start; run **`make run`** on the host to attach the API to the same DB
 
-1. `docker compose up` starts **postgres** first (with health check)
-2. Once Postgres is healthy, **atlas-migrate** runs `atlas migrate apply` against the database
-3. Once migrations succeed, **golang-structure** starts (via `depends_on: condition: service_completed_successfully`)
-
-### Adding New Migrations
+### Adding new Atlas migrations
 
 ```bash
-# Create a new migration file
+# Create a new migration file (with Atlas installed locally)
 atlas migrate new <migration_name> --dir "file://deployment/atlas/migrations"
 
 # Write your SQL in the generated file, then update the checksum
 atlas migrate hash --dir "file://deployment/atlas/migrations"
-
-# Or use the convenience target (runs Atlas in Docker, no local install required)
-make migrate-hash
 ```
+
+### Liquibase (optional, local)
+
+```bash
+# From repo root, after Postgres is up and .env / properties match your DB
+make liquibase-up
+```
+
+Uses `deployment/liquibase/properties/dev.properties` and `changelogs/master.yml`. Each changeset can include **`verify/`** SQL files for post-deploy checks.
+
+```
+deployment/liquibase/
+├── changelogs/
+│   ├── master.yml
+│   └── golangstructure/20260401000001.yaml
+├── changesets/golangstructure/20260401000001/
+│   ├── up/           # apply order
+│   ├── down/         # rollback stubs
+│   └── verify/       # verification scripts
+└── properties/
+    └── dev.properties
+```
+
+## Entity code generation (genentity)
+
+`cmd/genentity` connects to **Postgres** using `SQLDB_*` from `.env` (loads `.env` from the current directory or repo root), introspects a schema (default `public`), and writes one `.go` file per table into the output directory.
+
+```bash
+# Makefile default output directory (package name = last segment, e.g. gen)
+make gen-entity
+
+# Match the checked-in layout (package entity, files next to hand-written code)
+go run ./cmd/genentity -o internal/golangstructure/domain/entity
+```
+
+Flags (see `go run ./cmd/genentity -h`):
+
+| Flag | Purpose |
+|------|---------|
+| `-o` / `-out` | **Required.** Output directory; Go **package name** is the last path segment (e.g. `gen` or `entity`) |
+| `-schema` | Postgres schema to scan (default `public`) |
+| `-ignore-file` | Optional path to ignore-tables list (default: embedded `ignore_tables.txt`) |
+
+Tables listed in `cmd/genentity/ignore_tables.txt` are skipped. Only **`SQLDB_DRIVER=postgres`** is supported.
 
 ## Observability Stack
 
@@ -780,21 +837,16 @@ You will see **3 log entries** — one from each service — all correlated by t
 
 ## Makefile Commands
 
-| Command                | Description                                                          |
-|------------------------|----------------------------------------------------------------------|
-| `make run`             | Run main API locally                                                 |
-| `make gateway-run`     | Run gateway demo locally                                             |
-| `make orchestrate-run` | Run orchestrator demo locally                                        |
-| `make migrate-hash`    | Re-hash Atlas migration directory (runs Atlas in Docker)             |
-| `make up`              | Docker: start full stack (`docker compose up -d`)                    |
-| `make down`            | Docker: stop full stack                                              |
-| `make logs`            | Docker: follow all logs                                              |
-| `make infra-up`        | Docker: start DB + observability only                                |
-| `make infra-down`      | Docker: stop observability stack (keeps Postgres running)            |
-| `make infra-logs`      | Docker: follow observability logs                                    |
-| `make app-up`          | Docker: build & start app services (app + gateway + orchestrator)    |
-| `make app-down`        | Docker: stop app services                                            |
-| `make app-logs`        | Docker: follow app service logs                                      |
+| Command           | Description |
+|-------------------|-------------|
+| `make help`       | List targets and short descriptions |
+| `make run`        | Run main API: `go run cmd/golangstructure/main.go` |
+| `make gateway-run`| Run gateway demo: `go run cmd/gatewaydummie/main.go` |
+| `make orchestrate-run` | Run orchestrator demo: `go run cmd/orchestratedummie/main.go` |
+| `make liquibase-up` | Run Liquibase `update` using `deployment/liquibase/properties/dev.properties` (Liquibase must be installed) |
+| `make gen-entity` | Run codegen: `go run ./cmd/genentity -o internal/golangstructure/domain/entity/gen` (see [Entity code generation](#entity-code-generation-genentity); use `-o .../entity` for package `entity`) |
+| `make up`         | `docker compose up -d` (Postgres, atlas-migrate, observability) |
+| `make down`       | `docker compose down` |
 
 ## Testing
 
