@@ -25,7 +25,7 @@ func newService(
 
 func (s *service) Service(c fiber.Ctx, req *Request) error {
 	ctx := httpx.RequestContext(c)
-	user := entity.User{
+	user := entity.TblUsers{
 		Name: req.Name,
 		Age:  req.Age,
 	}

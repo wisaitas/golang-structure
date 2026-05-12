@@ -8,17 +8,17 @@ import (
 )
 
 type UserRepository interface {
-	gormx.BaseRepository[entity.User]
+	gormx.BaseRepository[entity.TblUsers]
 }
 
 type userRepository struct {
-	gormx.BaseRepository[entity.User]
+	gormx.BaseRepository[entity.TblUsers]
 }
 
 func NewUserRepository(
 	db *gorm.DB,
 ) UserRepository {
 	return &userRepository{
-		BaseRepository: gormx.NewBaseRepository[entity.User](db),
+		BaseRepository: gormx.NewBaseRepository[entity.TblUsers](db),
 	}
 }

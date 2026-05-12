@@ -1,4 +1,4 @@
-.PHONY: help run orchestrate-run gateway-run liquibase-up up down
+.PHONY: help run orchestrate-run gateway-run liquibase-up gen-entity up down
 
 help:
 	@echo "Usage: make <target>"
@@ -8,6 +8,7 @@ help:
 	@echo "  gateway-run - Run the gateway demo locally"
 	@echo "  liquibase must be installed"
 	@echo "  liquibase-up - Run the Liquibase migrations"
+	@echo "  gen-entity - Generate domain models from live Postgres into entity/gen"
 	@echo "  up - Start the full stack"
 	@echo "  down - Stop the full stack"
 
@@ -22,6 +23,9 @@ gateway-run:
 
 liquibase-up:
 	cd deployment/liquibase && liquibase --defaults-file=properties/dev.properties update
+
+gen-entity:
+	go run ./cmd/genentity -o internal/golangstructure/domain/entity/gen
 
 up:
 	docker compose up -d

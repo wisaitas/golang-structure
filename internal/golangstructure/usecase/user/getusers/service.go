@@ -29,7 +29,7 @@ func newService(
 }
 
 func (s *service) Service(ctx context.Context, request *Request) ([]Response, error) {
-	users := []entity.User{}
+	users := []entity.TblUsers{}
 	if err := s.userRepository.Find(ctx, &users, nil, &gormx.Condition{
 		Query: "deleted_at IS NULL",
 	}, nil); err != nil {

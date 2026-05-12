@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/suite"
 	"github.com/wisaitas/golang-structure/internal/golangstructure"
@@ -52,21 +53,23 @@ func (s *ServiceTestSuite) SetupTest() {
 func (s *ServiceTestSuite) TestServiceSuccess() {
 	txDB := &gorm.DB{}
 	transactionFnCalled := false
+	var createdUserID uuid.UUID
 	s.bcrypt.EXPECT().GenerateFromPassword(s.request.Password, golangstructure.Config.Bcrypt.Cost).
 		Return([]byte("hashed-password"), nil).Once()
 
 	s.userRepo.EXPECT().
 		Transaction(s.ctx, mock.Anything).
-		RunAndReturn(func(ctx context.Context, fn func(gormx.BaseRepository[entity.User]) error) error {
+		RunAndReturn(func(ctx context.Context, fn func(gormx.BaseRepository[entity.TblUsers]) error) error {
 			transactionFnCalled = true
 			return fn(s.userRepo)
 		})
 
 	s.userRepo.EXPECT().
-		Create(s.ctx, mock.AnythingOfType("*entity.User")).
+		Create(s.ctx, mock.AnythingOfType("*entity.TblUsers")).
 		RunAndReturn(func(ctx context.Context, value interface{}) error {
-			user := value.(*entity.User)
-			user.ID = 10
+			user := value.(*entity.TblUsers)
+			user.ID = uuid.New()
+			createdUserID = user.ID
 			return nil
 		})
 
@@ -79,10 +82,10 @@ func (s *ServiceTestSuite) TestServiceSuccess() {
 		Return(s.userLogRepo)
 
 	s.userLogRepo.EXPECT().
-		Create(s.ctx, mock.AnythingOfType("*entity.UserLog")).
+		Create(s.ctx, mock.AnythingOfType("*entity.TblUserLogs")).
 		RunAndReturn(func(ctx context.Context, value interface{}) error {
-			userLog := value.(*entity.UserLog)
-			s.Equal(10, userLog.UserID)
+			userLog := value.(*entity.TblUserLogs)
+			s.Equal(createdUserID, userLog.UserID)
 			s.Equal("register", userLog.Action)
 			return nil
 		})
@@ -98,12 +101,12 @@ func (s *ServiceTestSuite) TestServiceCreateUserDuplicateKey() {
 
 	s.userRepo.EXPECT().
 		Transaction(s.ctx, mock.Anything).
-		RunAndReturn(func(ctx context.Context, fn func(gormx.BaseRepository[entity.User]) error) error {
+		RunAndReturn(func(ctx context.Context, fn func(gormx.BaseRepository[entity.TblUsers]) error) error {
 			return fn(s.userRepo)
 		})
 
 	s.userRepo.EXPECT().
-		Create(s.ctx, mock.AnythingOfType("*entity.User")).
+		Create(s.ctx, mock.AnythingOfType("*entity.TblUsers")).
 		Return(errors.New("duplicate key value violates unique constraint"))
 
 	err := s.service.Service(s.ctx, s.request)
@@ -119,15 +122,15 @@ func (s *ServiceTestSuite) TestServiceCreateUserLogError() {
 
 	s.userRepo.EXPECT().
 		Transaction(s.ctx, mock.Anything).
-		RunAndReturn(func(ctx context.Context, fn func(gormx.BaseRepository[entity.User]) error) error {
+		RunAndReturn(func(ctx context.Context, fn func(gormx.BaseRepository[entity.TblUsers]) error) error {
 			return fn(s.userRepo)
 		})
 
 	s.userRepo.EXPECT().
-		Create(s.ctx, mock.AnythingOfType("*entity.User")).
+		Create(s.ctx, mock.AnythingOfType("*entity.TblUsers")).
 		RunAndReturn(func(ctx context.Context, value interface{}) error {
-			user := value.(*entity.User)
-			user.ID = 7
+			user := value.(*entity.TblUsers)
+			user.ID = uuid.New()
 			return nil
 		})
 
@@ -140,7 +143,7 @@ func (s *ServiceTestSuite) TestServiceCreateUserLogError() {
 		Return(s.userLogRepo)
 
 	s.userLogRepo.EXPECT().
-		Create(s.ctx, mock.AnythingOfType("*entity.UserLog")).
+		Create(s.ctx, mock.AnythingOfType("*entity.TblUserLogs")).
 		Return(errors.New("insert user log failed"))
 
 	err := s.service.Service(s.ctx, s.request)

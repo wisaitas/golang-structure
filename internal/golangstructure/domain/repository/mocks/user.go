@@ -121,7 +121,7 @@ func (_c *MockUserRepository_Delete_Call) RunAndReturn(run func(context.Context,
 }
 
 // Find provides a mock function with given fields: ctx, items, pagination, condition, relations
-func (_m *MockUserRepository) Find(ctx context.Context, items *[]entity.User, pagination *gormx.PaginationQuery, condition *gormx.Condition, relations *[]gormx.Relation) error {
+func (_m *MockUserRepository) Find(ctx context.Context, items *[]entity.TblUsers, pagination *gormx.PaginationQuery, condition *gormx.Condition, relations *[]gormx.Relation) error {
 	ret := _m.Called(ctx, items, pagination, condition, relations)
 
 	if len(ret) == 0 {
@@ -129,7 +129,7 @@ func (_m *MockUserRepository) Find(ctx context.Context, items *[]entity.User, pa
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *[]entity.User, *gormx.PaginationQuery, *gormx.Condition, *[]gormx.Relation) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *[]entity.TblUsers, *gormx.PaginationQuery, *gormx.Condition, *[]gormx.Relation) error); ok {
 		r0 = rf(ctx, items, pagination, condition, relations)
 	} else {
 		r0 = ret.Error(0)
@@ -145,7 +145,7 @@ type MockUserRepository_Find_Call struct {
 
 // Find is a helper method to define mock.On call
 //   - ctx context.Context
-//   - items *[]entity.User
+//   - items *[]entity.TblUsers
 //   - pagination *gormx.PaginationQuery
 //   - condition *gormx.Condition
 //   - relations *[]gormx.Relation
@@ -153,9 +153,9 @@ func (_e *MockUserRepository_Expecter) Find(ctx interface{}, items interface{}, 
 	return &MockUserRepository_Find_Call{Call: _e.mock.On("Find", ctx, items, pagination, condition, relations)}
 }
 
-func (_c *MockUserRepository_Find_Call) Run(run func(ctx context.Context, items *[]entity.User, pagination *gormx.PaginationQuery, condition *gormx.Condition, relations *[]gormx.Relation)) *MockUserRepository_Find_Call {
+func (_c *MockUserRepository_Find_Call) Run(run func(ctx context.Context, items *[]entity.TblUsers, pagination *gormx.PaginationQuery, condition *gormx.Condition, relations *[]gormx.Relation)) *MockUserRepository_Find_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*[]entity.User), args[2].(*gormx.PaginationQuery), args[3].(*gormx.Condition), args[4].(*[]gormx.Relation))
+		run(args[0].(context.Context), args[1].(*[]entity.TblUsers), args[2].(*gormx.PaginationQuery), args[3].(*gormx.Condition), args[4].(*[]gormx.Relation))
 	})
 	return _c
 }
@@ -165,13 +165,13 @@ func (_c *MockUserRepository_Find_Call) Return(_a0 error) *MockUserRepository_Fi
 	return _c
 }
 
-func (_c *MockUserRepository_Find_Call) RunAndReturn(run func(context.Context, *[]entity.User, *gormx.PaginationQuery, *gormx.Condition, *[]gormx.Relation) error) *MockUserRepository_Find_Call {
+func (_c *MockUserRepository_Find_Call) RunAndReturn(run func(context.Context, *[]entity.TblUsers, *gormx.PaginationQuery, *gormx.Condition, *[]gormx.Relation) error) *MockUserRepository_Find_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // FindOne provides a mock function with given fields: ctx, item, condition, relations
-func (_m *MockUserRepository) FindOne(ctx context.Context, item *entity.User, condition *gormx.Condition, relations *[]gormx.Relation) error {
+func (_m *MockUserRepository) FindOne(ctx context.Context, item *entity.TblUsers, condition *gormx.Condition, relations *[]gormx.Relation) error {
 	ret := _m.Called(ctx, item, condition, relations)
 
 	if len(ret) == 0 {
@@ -179,7 +179,7 @@ func (_m *MockUserRepository) FindOne(ctx context.Context, item *entity.User, co
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *entity.User, *gormx.Condition, *[]gormx.Relation) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, *entity.TblUsers, *gormx.Condition, *[]gormx.Relation) error); ok {
 		r0 = rf(ctx, item, condition, relations)
 	} else {
 		r0 = ret.Error(0)
@@ -195,16 +195,16 @@ type MockUserRepository_FindOne_Call struct {
 
 // FindOne is a helper method to define mock.On call
 //   - ctx context.Context
-//   - item *entity.User
+//   - item *entity.TblUsers
 //   - condition *gormx.Condition
 //   - relations *[]gormx.Relation
 func (_e *MockUserRepository_Expecter) FindOne(ctx interface{}, item interface{}, condition interface{}, relations interface{}) *MockUserRepository_FindOne_Call {
 	return &MockUserRepository_FindOne_Call{Call: _e.mock.On("FindOne", ctx, item, condition, relations)}
 }
 
-func (_c *MockUserRepository_FindOne_Call) Run(run func(ctx context.Context, item *entity.User, condition *gormx.Condition, relations *[]gormx.Relation)) *MockUserRepository_FindOne_Call {
+func (_c *MockUserRepository_FindOne_Call) Run(run func(ctx context.Context, item *entity.TblUsers, condition *gormx.Condition, relations *[]gormx.Relation)) *MockUserRepository_FindOne_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(*entity.User), args[2].(*gormx.Condition), args[3].(*[]gormx.Relation))
+		run(args[0].(context.Context), args[1].(*entity.TblUsers), args[2].(*gormx.Condition), args[3].(*[]gormx.Relation))
 	})
 	return _c
 }
@@ -214,7 +214,7 @@ func (_c *MockUserRepository_FindOne_Call) Return(_a0 error) *MockUserRepository
 	return _c
 }
 
-func (_c *MockUserRepository_FindOne_Call) RunAndReturn(run func(context.Context, *entity.User, *gormx.Condition, *[]gormx.Relation) error) *MockUserRepository_FindOne_Call {
+func (_c *MockUserRepository_FindOne_Call) RunAndReturn(run func(context.Context, *entity.TblUsers, *gormx.Condition, *[]gormx.Relation) error) *MockUserRepository_FindOne_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -315,7 +315,7 @@ func (_c *MockUserRepository_Save_Call) RunAndReturn(run func(context.Context, i
 }
 
 // Transaction provides a mock function with given fields: ctx, fn
-func (_m *MockUserRepository) Transaction(ctx context.Context, fn func(gormx.BaseRepository[entity.User]) error) error {
+func (_m *MockUserRepository) Transaction(ctx context.Context, fn func(gormx.BaseRepository[entity.TblUsers]) error) error {
 	ret := _m.Called(ctx, fn)
 
 	if len(ret) == 0 {
@@ -323,7 +323,7 @@ func (_m *MockUserRepository) Transaction(ctx context.Context, fn func(gormx.Bas
 	}
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, func(gormx.BaseRepository[entity.User]) error) error); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, func(gormx.BaseRepository[entity.TblUsers]) error) error); ok {
 		r0 = rf(ctx, fn)
 	} else {
 		r0 = ret.Error(0)
@@ -339,14 +339,14 @@ type MockUserRepository_Transaction_Call struct {
 
 // Transaction is a helper method to define mock.On call
 //   - ctx context.Context
-//   - fn func(gormx.BaseRepository[entity.User]) error
+//   - fn func(gormx.BaseRepository[entity.TblUsers]) error
 func (_e *MockUserRepository_Expecter) Transaction(ctx interface{}, fn interface{}) *MockUserRepository_Transaction_Call {
 	return &MockUserRepository_Transaction_Call{Call: _e.mock.On("Transaction", ctx, fn)}
 }
 
-func (_c *MockUserRepository_Transaction_Call) Run(run func(ctx context.Context, fn func(gormx.BaseRepository[entity.User]) error)) *MockUserRepository_Transaction_Call {
+func (_c *MockUserRepository_Transaction_Call) Run(run func(ctx context.Context, fn func(gormx.BaseRepository[entity.TblUsers]) error)) *MockUserRepository_Transaction_Call {
 	_c.Call.Run(func(args mock.Arguments) {
-		run(args[0].(context.Context), args[1].(func(gormx.BaseRepository[entity.User]) error))
+		run(args[0].(context.Context), args[1].(func(gormx.BaseRepository[entity.TblUsers]) error))
 	})
 	return _c
 }
@@ -356,7 +356,7 @@ func (_c *MockUserRepository_Transaction_Call) Return(_a0 error) *MockUserReposi
 	return _c
 }
 
-func (_c *MockUserRepository_Transaction_Call) RunAndReturn(run func(context.Context, func(gormx.BaseRepository[entity.User]) error) error) *MockUserRepository_Transaction_Call {
+func (_c *MockUserRepository_Transaction_Call) RunAndReturn(run func(context.Context, func(gormx.BaseRepository[entity.TblUsers]) error) error) *MockUserRepository_Transaction_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -409,19 +409,19 @@ func (_c *MockUserRepository_Update_Call) RunAndReturn(run func(context.Context,
 }
 
 // WithTx provides a mock function with given fields: tx
-func (_m *MockUserRepository) WithTx(tx *gorm.DB) gormx.BaseRepository[entity.User] {
+func (_m *MockUserRepository) WithTx(tx *gorm.DB) gormx.BaseRepository[entity.TblUsers] {
 	ret := _m.Called(tx)
 
 	if len(ret) == 0 {
 		panic("no return value specified for WithTx")
 	}
 
-	var r0 gormx.BaseRepository[entity.User]
-	if rf, ok := ret.Get(0).(func(*gorm.DB) gormx.BaseRepository[entity.User]); ok {
+	var r0 gormx.BaseRepository[entity.TblUsers]
+	if rf, ok := ret.Get(0).(func(*gorm.DB) gormx.BaseRepository[entity.TblUsers]); ok {
 		r0 = rf(tx)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(gormx.BaseRepository[entity.User])
+			r0 = ret.Get(0).(gormx.BaseRepository[entity.TblUsers])
 		}
 	}
 
@@ -446,12 +446,12 @@ func (_c *MockUserRepository_WithTx_Call) Run(run func(tx *gorm.DB)) *MockUserRe
 	return _c
 }
 
-func (_c *MockUserRepository_WithTx_Call) Return(_a0 gormx.BaseRepository[entity.User]) *MockUserRepository_WithTx_Call {
+func (_c *MockUserRepository_WithTx_Call) Return(_a0 gormx.BaseRepository[entity.TblUsers]) *MockUserRepository_WithTx_Call {
 	_c.Call.Return(_a0)
 	return _c
 }
 
-func (_c *MockUserRepository_WithTx_Call) RunAndReturn(run func(*gorm.DB) gormx.BaseRepository[entity.User]) *MockUserRepository_WithTx_Call {
+func (_c *MockUserRepository_WithTx_Call) RunAndReturn(run func(*gorm.DB) gormx.BaseRepository[entity.TblUsers]) *MockUserRepository_WithTx_Call {
 	_c.Call.Return(run)
 	return _c
 }

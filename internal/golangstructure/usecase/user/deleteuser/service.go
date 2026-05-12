@@ -27,7 +27,7 @@ func newService(
 
 func (s *service) Service(c fiber.Ctx, userID int) error {
 	ctx := httpx.RequestContext(c)
-	db := s.userRepository.GetDB(ctx).Model(&entity.User{}).Where("id = ?", userID)
+	db := s.userRepository.GetDB(ctx).Model(&entity.TblUsers{}).Where("id = ?", userID)
 	if err := s.userRepository.WithTx(db).Update(ctx, map[string]interface{}{"deleted_at": time.Now()}); err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{
 			"message": err.Error(),

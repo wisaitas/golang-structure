@@ -58,7 +58,7 @@ func (s *service) Service(ctx context.Context, request *Request) error {
 
 	user.Password = string(hashedPassword)
 
-	if err := s.userRepository.Transaction(ctx, func(txRepo gormx.BaseRepository[entity.User]) error {
+	if err := s.userRepository.Transaction(ctx, func(txRepo gormx.BaseRepository[entity.TblUsers]) error {
 		if err := txRepo.Create(ctx, user); err != nil {
 			if strings.Contains(err.Error(), "duplicate key") {
 				s.logger.Warn(ctx, "create user conflict",
@@ -75,7 +75,7 @@ func (s *service) Service(ctx context.Context, request *Request) error {
 		userLog := s.mapRequestToUserLog(user)
 		if err := s.userLogRepository.WithTx(txRepo.GetDB(ctx)).Create(ctx, userLog); err != nil {
 			s.logger.Error(ctx, "create user log failed",
-				zap.Int("userId", user.ID),
+				zap.String("userId", user.ID.String()),
 				zap.Error(err),
 			)
 			return httpx.WrapErrorWithCode(s.operation, err, fiber.StatusInternalServerError, httpx.CodeInternal)
@@ -91,7 +91,7 @@ func (s *service) Service(ctx context.Context, request *Request) error {
 	}
 
 	s.logger.Info(ctx, "register completed",
-		zap.Int("userId", user.ID),
+		zap.String("userId", user.ID.String()),
 		zap.String("email", request.Email),
 	)
 

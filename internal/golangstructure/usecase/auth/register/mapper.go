@@ -2,8 +2,8 @@ package register
 
 import "github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 
-func (s *service) mapRequestToEntity(request *Request) *entity.User {
-	return &entity.User{
+func (s *service) mapRequestToEntity(request *Request) *entity.TblUsers {
+	return &entity.TblUsers{
 		Name:     request.Name,
 		Email:    request.Email,
 		Age:      request.Age,
@@ -11,8 +11,8 @@ func (s *service) mapRequestToEntity(request *Request) *entity.User {
 	}
 }
 
-func (s *service) mapRequestToUserLog(user *entity.User) *entity.UserLog {
-	return &entity.UserLog{
+func (s *service) mapRequestToUserLog(user *entity.TblUsers) *entity.TblUserLogs {
+	return &entity.TblUserLogs{
 		UserID: user.ID,
 		Action: "register",
 	}

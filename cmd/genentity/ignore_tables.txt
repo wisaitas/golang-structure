@@ -1,0 +1,5 @@
+# One Postgres table name per line (matched case-insensitively).
+# Lines starting with # and blank lines are ignored.
+
+cfg_database_changelog
+cfg_database_changelog_lock

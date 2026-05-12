@@ -2,13 +2,14 @@ package updateuser
 
 import (
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/entity"
 	"github.com/wisaitas/golang-structure/internal/golangstructure/domain/repository"
 	"github.com/wisaitas/golang-structure/pkg/httpx"
 )
 
 type Service interface {
-	Service(c fiber.Ctx, req *Request, id int) error
+	Service(c fiber.Ctx, req *Request, id uuid.UUID) error
 }
 
 type service struct {
@@ -23,12 +24,10 @@ func newService(
 	}
 }
 
-func (s *service) Service(c fiber.Ctx, req *Request, id int) error {
+func (s *service) Service(c fiber.Ctx, req *Request, id uuid.UUID) error {
 	ctx := httpx.RequestContext(c)
-	user := entity.User{
-		Base: entity.Base{
-			ID: id,
-		},
+	user := entity.TblUsers{
+		ID:   id,
 		Name: req.Name,
 		Age:  req.Age,
 	}

@@ -1,9 +1,8 @@
 package updateuser
 
 import (
-	"strconv"
-
 	"github.com/gofiber/fiber/v3"
+	"github.com/google/uuid"
 	"github.com/wisaitas/golang-structure/pkg/validatorx"
 )
 
@@ -31,7 +30,7 @@ func (h *Handler) Handler(c fiber.Ctx) error {
 	}
 
 	param := c.Params("user_id")
-	userID, err := strconv.Atoi(param)
+	userID, err := uuid.Parse(param)
 	if err != nil {
 		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{
 			"message": err.Error(),
