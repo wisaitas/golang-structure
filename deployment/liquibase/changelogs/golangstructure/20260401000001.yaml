@@ -1,0 +1,32 @@
+databaseChangeLog:
+  - changeSet:
+      id: "01"
+      author: migration-schema
+      changes:
+        - sqlFile:
+            path: changesets/golangstructure/20260401000001/up/01_create_tbl_users.sql
+            stripComments: true
+        - sqlFile:
+            path: changesets/golangstructure/20260401000001/verify/01_create_tbl_users.sql
+            stripComments: true
+            splitStatements: false
+      rollback:
+        - sqlFile:
+            path: changesets/golangstructure/20260401000001/down/01_create_tbl_users.sql
+            stripComments: true
+
+  - changeSet:
+      id: "02"
+      author: migration-schema
+      changes:
+        - sqlFile:
+            path: changesets/golangstructure/20260401000001/up/02_create_tbl_user_logs.sql
+            stripComments: true
+        - sqlFile:
+            path: changesets/golangstructure/20260401000001/verify/02_create_tbl_user_logs.sql
+            stripComments: true
+            splitStatements: false
+      rollback:
+        - sqlFile:
+            path: changesets/golangstructure/20260401000001/down/02_create_tbl_user_logs.sql
+            stripComments: true
