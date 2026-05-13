@@ -1,5 +1,5 @@
 CREATE TABLE "tbl_users" (
-    "id"         SERIAL       PRIMARY KEY,
+    "id"         UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
     "name"       VARCHAR      NOT NULL,
     "age"        INTEGER      NOT NULL,
     "email"      VARCHAR      NOT NULL UNIQUE,
