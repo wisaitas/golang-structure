@@ -25,7 +25,7 @@ liquibase-up:
 	cd deployment/liquibase && liquibase --defaults-file=properties/dev.properties update
 
 gen-entity:
-	go run ./cmd/genentity -o internal/golangstructure/domain/entity/gen
+	go run ./cmd/genentity -o internal/golangstructure/domain/entity
 
 up:
 	docker compose up -d

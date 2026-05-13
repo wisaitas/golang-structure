@@ -52,21 +52,21 @@ services:
     networks:
       - app-network
 
-  # ── Database Migration ──────────────────────────────────────────────
-  atlas-migrate:
-    image: arigaio/atlas:latest
-    container_name: atlas-migrate
-    command: >
-      migrate apply
-      --url "postgres://admin:postgres@postgres:5432/golang-structure-db?sslmode=disable"
-      --dir "file:///migrations"
-    volumes:
-      - ./deployment/atlas/migrations:/migrations
-    depends_on:
-      postgres:
-        condition: service_healthy
-    networks:
-      - app-network
+  # # ── Database Migration ──────────────────────────────────────────────
+  # atlas-migrate:
+  #   image: arigaio/atlas:latest
+  #   container_name: atlas-migrate
+  #   command: >
+  #     migrate apply
+  #     --url "postgres://admin:postgres@postgres:5432/golang-structure-db?sslmode=disable"
+  #     --dir "file:///migrations"
+  #   volumes:
+  #     - ./deployment/atlas/migrations:/migrations
+  #   depends_on:
+  #     postgres:
+  #       condition: service_healthy
+  #   networks:
+  #     - app-network
 
   # ── Observability ─────────────────────────────────────────────────────
   loki:
