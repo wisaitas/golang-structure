@@ -1,1 +1,0 @@
-INSERT INTO tbl_users (name, age, email, password) VALUES ('John Doe', 30, 'john.doe@example.com', 'password123');

@@ -27,8 +27,8 @@ services:
   #     logging: "true"
   #     logging_jobname: "golang-structure"
   #   depends_on:
-  #     atlas-migrate:
-  #       condition: service_completed_successfully
+  #     postgres:
+  #       condition: service_healthy
   #   networks:
   #     - app-network
 
@@ -53,38 +53,22 @@ services:
       - app-network
   
   # ── Database (uat) host port 5433 -> container 5432, DB golang-structure-db-uat ──
-  postgres2:
-    image: postgres:18-alpine
-    container_name: postgres2
-    ports:
-      - 5433:5432
-    environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: golang-structure-db-uat
-    volumes:
-      - postgres-data-uat:/var/lib/postgresql
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d golang-structure-db-uat"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-    networks:
-      - app-network
-
-  # # ── Database Migration ──────────────────────────────────────────────
-  # atlas-migrate:
-  #   image: arigaio/atlas:latest
-  #   container_name: atlas-migrate
-  #   command: >
-  #     migrate apply
-  #     --url "postgres://admin:postgres@postgres:5432/golang-structure-db?sslmode=disable"
-  #     --dir "file:///migrations"
+  # postgres2:
+  #   image: postgres:18-alpine
+  #   container_name: postgres2
+  #   ports:
+  #     - 5433:5432
+  #   environment:
+  #     POSTGRES_USER: admin
+  #     POSTGRES_PASSWORD: postgres
+  #     POSTGRES_DB: golang-structure-db-uat
   #   volumes:
-  #     - ./deployment/atlas/migrations:/migrations
-  #   depends_on:
-  #     postgres:
-  #       condition: service_healthy
+  #     - postgres-data-uat:/var/lib/postgresql
+  #   healthcheck:
+  #     test: ["CMD-SHELL", "pg_isready -U admin -d golang-structure-db-uat"]
+  #     interval: 5s
+  #     timeout: 5s
+  #     retries: 5
   #   networks:
   #     - app-network
 
